@@ -2,3 +2,17 @@
 __pycache__/
 *.pyc
 *.egg-info/
+.venv/
+.venv-linux-build/
+artifacts/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.log
+logs/
+.DS_Store
+Thumbs.db

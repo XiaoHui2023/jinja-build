@@ -1,0 +1,79 @@
+name: Build CLI Ubuntu Binary
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Artifact version label
+        required: false
+        default: manual
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  build-linux-x86_64:
+    name: Build Linux x86_64 executable
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve artifact version
+        id: meta
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ] && [ -n "${{ inputs.version }}" ]; then
+            version="${{ inputs.version }}"
+          else
+            version="${GITHUB_REF_NAME:-run-${GITHUB_RUN_NUMBER}}"
+          fi
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+
+      - name: Build executable in manylinux2014
+        shell: bash
+        run: |
+          set -euxo pipefail
+          docker run --rm \
+            -v "${PWD}:/workspace" \
+            -w /workspace \
+            quay.io/pypa/manylinux2014_x86_64 \
+            /bin/bash -lc '
+              set -euxo pipefail
+              export PATH="/opt/python/cp312-cp312/bin:${PATH}"
+
+              python -m venv .venv-linux-build
+              . .venv-linux-build/bin/activate
+              python -m pip install --upgrade pip
+
+              python -c '"'"'import tomllib; from pathlib import Path; project = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8")); dependencies = project["project"].get("dependencies", []); Path("/tmp/jinja-build-requirements.txt").write_text("\n".join([*dependencies, "pyinstaller"]) + "\n", encoding="utf-8")'"'"'
+
+              python -m pip install -r /tmp/jinja-build-requirements.txt
+              python -m unittest discover -s tests
+
+              pyinstaller \
+                --clean \
+                --noconfirm \
+                --onefile \
+                --name jinja-build \
+                --paths cli \
+                cli/__main__.py
+
+              dist/jinja-build --help
+            '
+
+          mkdir -p artifacts
+          cp dist/jinja-build artifacts/jinja-build-linux-x86_64
+          chmod +x artifacts/jinja-build-linux-x86_64
+
+      - name: Upload executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: jinja-build-linux-x86_64-${{ steps.meta.outputs.version }}
+          path: artifacts/jinja-build-linux-x86_64
+          if-no-files-found: error
