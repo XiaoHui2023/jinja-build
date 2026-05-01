@@ -1,0 +1,11 @@
+[project]
+name = "jinja-build"
+version = "0.0.0"
+dependencies = [
+    "configlib",
+    "Jinja2",
+    "pydantic",
+    "PyYAML",
+    "typeguard",
+    "python-library-configlib==0.1.0",
+]
