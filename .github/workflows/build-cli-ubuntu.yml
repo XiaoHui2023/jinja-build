@@ -38,30 +38,77 @@ jobs:
           fi
           echo "version=${version}" >> "${GITHUB_OUTPUT}"
 
-      - name: Build executable in manylinux2014
+      - name: Build executable in Ubuntu 16.04
         shell: bash
         run: |
           set -euxo pipefail
           docker run --rm \
             -v "${PWD}:/workspace" \
             -w /workspace \
-            quay.io/pypa/manylinux2014_x86_64 \
+            ubuntu:16.04 \
             /bin/bash -lc '
               set -euxo pipefail
-              if [ -d /opt/python/cp312-cp312/bin ]; then
-                export PATH="/opt/python/cp312-cp312/bin:${PATH}"
-              elif [ -d /opt/python/cp311-cp311/bin ]; then
-                export PATH="/opt/python/cp311-cp311/bin:${PATH}"
-              else
-                echo "Python 3.11+ is required in the manylinux image." >&2
-                exit 1
-              fi
+              export DEBIAN_FRONTEND=noninteractive
 
-              python -m venv .venv-linux-build
+              sed -i \
+                -e "s|http://archive.ubuntu.com/ubuntu|http://old-releases.ubuntu.com/ubuntu|g" \
+                -e "s|http://security.ubuntu.com/ubuntu|http://old-releases.ubuntu.com/ubuntu|g" \
+                /etc/apt/sources.list
+
+              apt-get update
+              apt-get install -y --no-install-recommends \
+                ca-certificates \
+                wget \
+                perl \
+                build-essential \
+                binutils \
+                zlib1g-dev \
+                libssl-dev \
+                libbz2-dev \
+                libreadline-dev \
+                libsqlite3-dev \
+                libffi-dev \
+                liblzma-dev \
+                xz-utils
+
+              openssl_version=1.1.1w
+              openssl_prefix=/opt/openssl-${openssl_version}
+              wget -q https://www.openssl.org/source/old/1.1.1/openssl-${openssl_version}.tar.gz -O /tmp/OpenSSL.tgz
+              mkdir -p /tmp/openssl-src
+              tar -xzf /tmp/OpenSSL.tgz -C /tmp/openssl-src --strip-components=1
+              cd /tmp/openssl-src
+              ./config \
+                --prefix="${openssl_prefix}" \
+                --openssldir="${openssl_prefix}/ssl" \
+                shared \
+                zlib
+              make -j"$(nproc)"
+              make install_sw
+
+              python_version=3.10.14
+              python_prefix=/opt/python-${python_version}
+              wget -q https://www.python.org/ftp/python/${python_version}/Python-${python_version}.tgz -O /tmp/Python.tgz
+              mkdir -p /tmp/python-src
+              tar -xzf /tmp/Python.tgz -C /tmp/python-src --strip-components=1
+              cd /tmp/python-src
+              ./configure \
+                --prefix="${python_prefix}" \
+                --enable-shared \
+                --with-openssl="${openssl_prefix}" \
+                --with-openssl-rpath=auto \
+                --with-ensurepip=install \
+                CPPFLAGS="-I${openssl_prefix}/include" \
+                LDFLAGS="-Wl,-rpath=${python_prefix}/lib -Wl,-rpath=${openssl_prefix}/lib -L${openssl_prefix}/lib"
+              make -j"$(nproc)"
+              make install
+              cd /workspace
+
+              "${python_prefix}/bin/python3.10" -m venv .venv-linux-build
               . .venv-linux-build/bin/activate
               python -m pip install --upgrade pip
+              python -m pip install tomli
 
-              python -c '"'"'import tomllib; from pathlib import Path; project = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8")); dependencies = project["project"].get("dependencies", []); Path("/tmp/jinja-build-requirements.txt").write_text("\n".join([*dependencies, "pyinstaller"]) + "\n", encoding="utf-8")'"'"'
+              python -c '"'"'import tomli; from pathlib import Path; project = tomli.loads(Path("pyproject.toml").read_text(encoding="utf-8")); dependencies = project["project"].get("dependencies", []); Path("/tmp/jinja-build-requirements.txt").write_text("\n".join([*dependencies, "pyinstaller"]) + "\n", encoding="utf-8")'"'"'
 
               python -m pip install -r /tmp/jinja-build-requirements.txt
               python -m unittest discover -s tests
