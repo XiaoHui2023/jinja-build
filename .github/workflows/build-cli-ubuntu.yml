@@ -14,6 +14,9 @@ on:
 permissions:
   contents: read
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build-linux-x86_64:
     name: Build Linux x86_64 executable
@@ -45,7 +48,14 @@ jobs:
             quay.io/pypa/manylinux2014_x86_64 \
             /bin/bash -lc '
               set -euxo pipefail
-              export PATH="/opt/python/cp312-cp312/bin:${PATH}"
+              if [ -d /opt/python/cp312-cp312/bin ]; then
+                export PATH="/opt/python/cp312-cp312/bin:${PATH}"
+              elif [ -d /opt/python/cp311-cp311/bin ]; then
+                export PATH="/opt/python/cp311-cp311/bin:${PATH}"
+              else
+                echo "Python 3.11+ is required in the manylinux image." >&2
+                exit 1
+              fi
 
               python -m venv .venv-linux-build
               . .venv-linux-build/bin/activate
