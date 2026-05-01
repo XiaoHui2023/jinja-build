@@ -1,0 +1,66 @@
+name: Build Docker Offline Package
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Docker image and artifact version label
+        required: false
+        default: manual
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  build-docker-offline-package:
+    name: Build Docker offline package
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve artifact version
+        id: meta
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ] && [ -n "${{ inputs.version }}" ]; then
+            version="${{ inputs.version }}"
+          else
+            version="${GITHUB_REF_NAME:-run-${GITHUB_RUN_NUMBER}}"
+          fi
+          version="${version#v}"
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+
+      - name: Build offline package
+        shell: bash
+        run: |
+          set -euxo pipefail
+          chmod +x docker/build-offline-package.sh
+          docker/build-offline-package.sh "${{ steps.meta.outputs.version }}"
+
+      - name: Upload offline package
+        uses: actions/upload-artifact@v4
+        with:
+          name: jinja-build-docker-${{ steps.meta.outputs.version }}
+          path: artifacts/jinja-build-docker-${{ steps.meta.outputs.version }}.tar.gz
+          if-no-files-found: error
+
+      - name: Publish GitHub release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          gh release create "${GITHUB_REF_NAME}" \
+            "artifacts/jinja-build-docker-${{ steps.meta.outputs.version }}.tar.gz" \
+            --title "${GITHUB_REF_NAME}" \
+            --notes "Docker offline package for jinja-build."

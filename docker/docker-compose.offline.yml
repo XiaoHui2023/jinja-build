@@ -1,0 +1,18 @@
+services:
+  jinja-build:
+    image: ${IMAGE_NAME:-jinja-build:offline}
+    container_name: ${CONTAINER_NAME:-jinja-build}
+    restart: unless-stopped
+    ports:
+      - "${PORT:-8000}:8000"
+    environment:
+      PORT: "8000"
+      TEMPLATE_DIR: /data/template
+      DOC_DIR: /data/doc
+      LOG_DIR: /data/log
+      MODELS_FILENAME: ${MODELS_FILENAME:-models.py}
+      DOC_INTERVAL: ${DOC_INTERVAL:-1.0}
+    volumes:
+      - ./template:/data/template:ro
+      - ./doc-output:/data/doc
+      - ./log:/data/log
