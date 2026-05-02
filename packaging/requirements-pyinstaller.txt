@@ -1,0 +1,4 @@
+Jinja2
+pydantic
+python-library-configlib==0.1.0
+pyinstaller

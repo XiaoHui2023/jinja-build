@@ -4,10 +4,12 @@ __pycache__/
 *.egg-info/
 .venv/
 .venv-linux-build/
+.venv-pyinstaller/
 .build-cache/
 artifacts/
 build/
 dist/
+packaging/wheels/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
