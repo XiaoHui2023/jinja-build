@@ -29,7 +29,7 @@ def configure_logging(log_dir: str | Path) -> tuple[logging.Logger, Path]:
 def _log_path(log_dir: str | Path) -> Path:
     """按日期和时间生成日志文件路径。"""
     now = datetime.now()
-    return Path(log_dir) / now.strftime("%Y%m%d") / f"{now.strftime('%H%M%S')}.log"
+    return Path(log_dir) / now.strftime("%Y-%m-%d") / f"{now.strftime('%H-%M-%S')}.log"
 
 
 def get_logger() -> logging.Logger:

@@ -125,7 +125,7 @@ class DocGenerationTests(unittest.TestCase):
             self.assertTrue((output / "bad.md").exists())
 
     def test_configure_logging_writes_time_named_file(self) -> None:
-        """日志会写入年月日和时分秒命名的文件。"""
+        """日志会写入日期和时间命名的文件。"""
         with tempfile.TemporaryDirectory() as tmp:
             try:
                 log_path = configure_logging(tmp)
@@ -136,10 +136,8 @@ class DocGenerationTests(unittest.TestCase):
                 logging.getLogger().handlers.clear()
 
             self.assertEqual(log_path.parent.parent, Path(tmp))
-            self.assertEqual(len(log_path.parent.name), 8)
-            self.assertTrue(log_path.parent.name.isdigit())
-            self.assertEqual(len(log_path.stem), 6)
-            self.assertTrue(log_path.stem.isdigit())
+            self.assertRegex(log_path.parent.name, r"^\d{4}-\d{2}-\d{2}$")
+            self.assertRegex(log_path.stem, r"^\d{2}-\d{2}-\d{2}$")
             self.assertEqual(log_path.suffix, ".log")
             self.assertIn("hello doc", log_path.read_text(encoding="utf-8"))
 

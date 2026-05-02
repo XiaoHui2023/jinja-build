@@ -180,8 +180,8 @@ class ServerRenderTests(unittest.TestCase):
                 self.assertIn("render failed", log_text)
                 self.assertIn("RuntimeError: template exploded", log_text)
                 self.assertEqual(log_path.parent.parent, log_dir)
-                self.assertEqual(len(log_path.parent.name), 8)
-                self.assertEqual(len(log_path.stem), 6)
+                self.assertRegex(log_path.parent.name, r"^\d{4}-\d{2}-\d{2}$")
+                self.assertRegex(log_path.stem, r"^\d{2}-\d{2}-\d{2}$")
                 self.assertEqual(log_path.suffix, ".log")
             finally:
                 httpd.shutdown()
