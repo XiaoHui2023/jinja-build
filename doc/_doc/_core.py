@@ -14,12 +14,12 @@ Snapshot = tuple[tuple[str, int, int], ...]
 
 
 class Doc(BaseModel):
-    """监听模板仓库，把数据结构文件生成可读文档。"""
+    """扫描模板仓库，把数据结构文件生成可读文档。"""
 
-    template: str = Field(description="要监听的模板根目录。")
+    template: str = Field(description="要扫描的模板根目录。")
     output: str = Field(description="文档输出根目录。")
     models_filename: str = Field(default="models.py", description="用于识别仓库的数据结构文件名。")
-    interval: float = Field(default=1.0, description="检查目录变化的间隔秒数。")
+    interval: float = Field(default=1.0, description="持续监听时检查目录变化的间隔秒数。")
 
     _last_snapshots: dict[Path, Snapshot] = PrivateAttr(default_factory=dict)
     _failed_snapshots: dict[Path, Snapshot] = PrivateAttr(default_factory=dict)

@@ -1,3 +1,4 @@
+import importlib.util
 import logging
 import sys
 import tempfile
@@ -14,9 +15,27 @@ from _doc import Doc  # noqa: E402
 from _doc._logging import configure_logging  # noqa: E402
 from _doc._repo import discover_repositories  # noqa: E402
 
+DOC_MAIN_SPEC = importlib.util.spec_from_file_location("doc_cli_main", SRC / "__main__.py")
+assert DOC_MAIN_SPEC is not None
+assert DOC_MAIN_SPEC.loader is not None
+doc_cli_main = importlib.util.module_from_spec(DOC_MAIN_SPEC)
+DOC_MAIN_SPEC.loader.exec_module(doc_cli_main)
+
 
 class DocGenerationTests(unittest.TestCase):
     """覆盖仓库发现、结构文档和错误隔离。"""
+
+    def test_cli_defaults_to_single_run(self) -> None:
+        """命令行默认只执行一次。"""
+        args = doc_cli_main.get_args(["-t", "template", "-o", "docs", "-l", "logs"])
+
+        self.assertFalse(args.watch)
+
+    def test_cli_watch_enables_continuous_run(self) -> None:
+        """传入监听参数后持续执行。"""
+        args = doc_cli_main.get_args(["-t", "template", "-o", "docs", "-l", "logs", "--watch"])
+
+        self.assertTrue(args.watch)
 
     def test_discover_repositories_stops_at_first_models_file(self) -> None:
         """发现仓库后不会继续把子目录当成新仓库。"""

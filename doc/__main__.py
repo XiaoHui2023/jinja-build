@@ -1,13 +1,14 @@
 import argparse
+from collections.abc import Sequence
 
 from _doc import Doc
 from _doc._logging import configure_logging
 
 
-def get_args() -> argparse.Namespace:
+def get_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     """解析文档生成参数。"""
     parser = argparse.ArgumentParser()
-    parser.add_argument("-t", "--template", type=str, required=True, help="要监听的模板根目录")
+    parser.add_argument("-t", "--template", type=str, required=True, help="要扫描的模板根目录")
     parser.add_argument("-o", "--output", type=str, required=True, help="文档输出根目录")
     parser.add_argument("-l", "--log", type=str, required=True, help="日志输出目录")
     parser.add_argument(
@@ -22,9 +23,15 @@ def get_args() -> argparse.Namespace:
         "--interval",
         type=float,
         default=1.0,
-        help="检查目录变化的间隔秒数",
+        help="持续监听时检查目录变化的间隔秒数",
     )
-    return parser.parse_args()
+    parser.add_argument(
+        "-w",
+        "--watch",
+        action="store_true",
+        help="持续监听模板目录；默认只扫描并生成一次",
+    )
+    return parser.parse_args(argv)
 
 
 def main() -> None:
@@ -38,7 +45,10 @@ def main() -> None:
         interval=args.interval,
     )
     print(f"doc log: {log_path}")
-    doc.run()
+    if args.watch:
+        doc.run()
+    else:
+        doc.run_once()
 
 
 if __name__ == "__main__":
