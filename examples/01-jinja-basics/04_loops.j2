@@ -1,0 +1,9 @@
+=== 4. 循环 ===
+{% for item in items %}
+- {{ loop.index }}. {{ item.name }} x{{ item.qty }} (first={{ loop.first }}, last={{ loop.last }})
+{% else %}
+（列表为空）
+{% endfor %}
+{% for item in items if item.active %}
+活跃: {{ item.name }}
+{% endfor %}

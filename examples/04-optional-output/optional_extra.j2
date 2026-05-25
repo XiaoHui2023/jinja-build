@@ -1,0 +1,5 @@
+{% if emit_extra %}
+额外说明：{{ project }}
+{% else %}
+{# 关闭时故意留空：渲染结果为空，jinja-build 不会写出本文件 #}
+{% endif %}

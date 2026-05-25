@@ -1,0 +1,3 @@
+project: demo-app
+emit_readme: true
+emit_extra: false

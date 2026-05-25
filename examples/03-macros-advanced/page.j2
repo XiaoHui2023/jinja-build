@@ -1,0 +1,7 @@
+{% extends 'layout.j2' %}
+{% from '_macros.j2' import field_row, callout with context %}
+{% block doc %}
+{{ callout(product ~ ' v' ~ version) }}
+{{ field_row('product', product) }}
+{{ field_row('version', version) }}
+{% endblock %}

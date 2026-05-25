@@ -1,0 +1,8 @@
+=== 5. set 与 Jinja 自带过滤器 ===
+{% set total = items | map(attribute='qty') | sum %}
+合计数量: {{ total }}
+{% set label = title | upper %}
+大写标题: {{ label }}
+默认过滤器示例: {{ note | default('N/A') }} / {{ items | length }} 项
+{% set escaped = '{{ 不是变量 }}' %}
+字面花括号: {{ escaped }}

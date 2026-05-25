@@ -1,0 +1,12 @@
+=== 7. 逻辑与 is 测试 ===
+{% if count is divisibleby(3) %}
+count 能被 3 整除
+{% endif %}
+{% if title is defined and title %}
+title 已定义且非空
+{% endif %}
+{% if items is iterable %}
+items 可迭代
+{% endif %}
+相等: {{ (count == 3) }}
+不等: {{ (enabled != false) }}

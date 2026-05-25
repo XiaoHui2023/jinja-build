@@ -1,0 +1,7 @@
+{% macro field_row(name, value) -%}
+| {{ name }} | {{ value }} |
+{%- endmacro %}
+
+{% macro callout(body, tone='info') -%}
+[{{ tone }}] {{ body }}
+{%- endmacro %}

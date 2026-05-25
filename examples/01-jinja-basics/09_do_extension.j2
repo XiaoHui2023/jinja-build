@@ -1,0 +1,4 @@
+=== 9. do 扩展（修改列表，不直接输出）===
+{% set names = [] %}
+{% for item in items %}{% do names.append(item.name) %}{% endfor %}
+收集到的名称: {{ names | join(', ') }}

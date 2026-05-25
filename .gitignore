@@ -1,15 +1,20 @@
 *.png
 __pycache__/
 *.pyc
+*.pyo
 *.egg-info/
+.eggs/
+*.egg
 .venv/
 .venv-linux-build/
 .venv-pyinstaller/
+.cursor/*
+!.cursor/skills/
 .build-cache/
 artifacts/
 build/
 dist/
-packaging/wheels/
+examples/**/generated/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
@@ -19,3 +24,4 @@ htmlcov/
 logs/
 .DS_Store
 Thumbs.db
+desktop.ini

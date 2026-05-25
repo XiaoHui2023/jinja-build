@@ -1,0 +1,13 @@
+=== 3. 条件 ===
+{% if enabled %}
+全局开关: 开启
+{% else %}
+全局开关: 关闭
+{% endif %}
+{% if note %}
+有 note: {{ note }}
+{% elif count > 10 %}
+note 空且 count 很大
+{% else %}
+无 note，count={{ count }}
+{% endif %}

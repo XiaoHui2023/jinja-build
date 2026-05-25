@@ -1,0 +1,6 @@
+=== 10. 转义与 raw ===
+显示字面量: {{ '{{ not_a_variable }}' }}
+{% raw %}
+{% for x in [1,2] %}{{ x }}{% endfor %}
+{% endraw %}
+以上 raw 块内的标签不会被 Jinja 执行。

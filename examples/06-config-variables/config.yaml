@@ -1,0 +1,13 @@
+vars:
+  prefix: acme
+  version: 3
+paths:
+  base: ${vars.prefix}_root
+project_name: ${vars.prefix}-app-v${vars.version}
+output_dir: ${paths.base}/out
+file_count: ${vars.version}
+tags:
+  - ${vars.prefix}
+  - stable
+nested:
+  label: ${project_name}-build

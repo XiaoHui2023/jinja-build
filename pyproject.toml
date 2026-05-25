@@ -1,8 +1,16 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "jinja-build"
 version = "0.0.0"
+requires-python = ">=3.10"
 dependencies = [
     "Jinja2",
     "pydantic",
-    "python-library-configlib==0.1.0",
+    "python-library-configlib==0.1.1",
 ]
+
+[tool.setuptools]
+packages = []

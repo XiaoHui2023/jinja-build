@@ -1,0 +1,17 @@
+=== jinja-build 过滤器示范 ===
+
+-- property（变量）--
+label={{ label }}
+
+-- 内置过滤器（管道）--
+replace: {{ raw | replace('l', 'L') }}
+upper: {{ raw | upper }}
+join: {{ '-' | join(items) }}
+len: {{ items | len }}
+
+-- models.py 方法作过滤器 --
+title_filter: {{ '' | title }}
+wrap: {{ raw | wrap('**') }}
+
+-- 仍可用函数写法 --
+title_call: {{ title() }}

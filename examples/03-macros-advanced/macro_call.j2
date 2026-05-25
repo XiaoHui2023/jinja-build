@@ -1,0 +1,8 @@
+{% import '_macros.j2' as m %}
+{% macro list_item(name) -%}
+* {{ name }}
+{%- endmacro %}
+=== macro 与 import ===
+{{ m.callout(product ~ ' v' ~ version) }}
+{{ m.field_row('product', product) }}
+{{ list_item(product) }}

@@ -1,0 +1,14 @@
+title: Jinja 基础语法示范
+enabled: true
+count: 3
+note: 可选说明行
+items:
+  - name: alpha
+    qty: 2
+    active: true
+  - name: beta
+    qty: 1
+    active: false
+  - name: gamma
+    qty: 5
+    active: true

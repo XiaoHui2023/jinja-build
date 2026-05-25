@@ -7,7 +7,7 @@ from pathlib import Path
 from pydantic import ValidationError
 
 ROOT = Path(__file__).resolve().parents[1]
-SRC = ROOT / "cli"
+SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
@@ -160,6 +160,44 @@ class CoreRenderTests(unittest.TestCase):
                 )
 
             self.assertIn("Duplicate batch output name: same", str(error.exception))
+
+    def test_property_and_filters_are_available_in_templates(self) -> None:
+        """property 作变量、内置与 models 方法作过滤器。"""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            template = root / "template"
+            output = root / "output"
+            template.mkdir()
+            (template / "models.py").write_text(
+                "class Data:\n"
+                "    def __init__(self, name=''):\n"
+                "        self.name = name\n"
+                "\n"
+                "    @property\n"
+                "    def label(self):\n"
+                "        return self.name.upper()\n"
+                "\n"
+                "    def title(self):\n"
+                "        return f'title:{self.name}'\n",
+                encoding="utf-8",
+            )
+            self._write_json(root / "ada.json", {"name": "ada"})
+            (template / "out.txt.j2").write_text(
+                "{{ label }}|{{ name | replace('a', 'o') }}|{{ '' | title }}\n"
+                "{% set items = [1, 2, 3] %}{{ items | len }}|{{ items | sum }}\n",
+                encoding="utf-8",
+            )
+
+            Core(
+                template=str(template),
+                input=str(root / "ada.json"),
+                output=str(output),
+            ).run()
+
+            self.assertEqual(
+                (output / "out.txt").read_text(encoding="utf-8"),
+                "ADA|odo|title:ada\n3|6",
+            )
 
     def test_dynamic_loading_restores_sys_path(self) -> None:
         """动态导入期间可读同目录辅助文件，结束后恢复搜索路径。"""
