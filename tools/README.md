@@ -5,9 +5,10 @@
 在仓库根执行（使用根目录 `.venv`，无则创建）：
 
 ```bash
-chmod +x tools/pack.sh
 ./tools/pack.sh
 ```
+
+Windows 上若无法直接执行，可用 `bash tools/pack.sh`。
 
 默认构建全部入口。只打某一个时传入 `src` 或 `schema`：
 

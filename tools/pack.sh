@@ -2,7 +2,7 @@
 # 统一打包：使用仓库根 .venv，先 PyInstaller（各入口 spec），Linux 再 staticx 得到自解压静态包。
 # Windows 仅 PyInstaller（无 staticx）。
 #
-# 用法（仓库根）：bash tools/pack.sh [all|src|schema]
+# 用法（仓库根）：./tools/pack.sh [all|src|schema]
 # Linux 另需系统包 patchelf（如 apt install patchelf）。
 set -euo pipefail
 
@@ -128,7 +128,7 @@ case "$TARGET" in
     build_target "$TARGET"
     ;;
   *)
-    echo "用法: bash tools/pack.sh [all|src|schema]" >&2
+    echo "用法: ./tools/pack.sh [all|src|schema]" >&2
     exit 1
     ;;
 esac

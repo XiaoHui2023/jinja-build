@@ -1,7 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
 """PyInstaller 规格：结构说明文档入口 onefile 单可执行文件。
 
-构建入口：仓库根执行 bash tools/pack.sh schema（Linux 上再跑 staticx）。
+构建入口：仓库根执行 ./tools/pack.sh schema（Linux 上再跑 staticx）。
 """
 from __future__ import annotations
 

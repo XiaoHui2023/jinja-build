@@ -1,7 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
 """PyInstaller 规格：主入口（src）onefile 单可执行文件。
 
-构建入口：仓库根执行 bash tools/pack.sh（内部用 .venv 跑 PyInstaller；Linux 上再跑 staticx）。
+构建入口：仓库根执行 ./tools/pack.sh（内部用 .venv 跑 PyInstaller；Linux 上再跑 staticx）。
 """
 from __future__ import annotations
 
