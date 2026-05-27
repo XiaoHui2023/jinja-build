@@ -18,7 +18,7 @@ from _utils._input_errors import (  # noqa: E402
     build_input_load_error_report,
     print_input_model_error,
 )
-from _utils._jinja_rich import jinja_error_console  # noqa: E402
+from _utils._jinja_rich import configure_jinja_error_theme, jinja_error_console  # noqa: E402
 
 
 class Item(BaseModel):
@@ -69,6 +69,7 @@ class InputErrorReportTests(unittest.TestCase):
         self.assertTrue(any("__init__ 参数" in hint for hint in report.hints))
 
     def test_print_writes_rich_output(self) -> None:
+        configure_jinja_error_theme("light")
         try:
             Data(items=[{"name": "only"}])
         except ValidationError as exc:

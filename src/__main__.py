@@ -1,7 +1,9 @@
 import argparse
+import os
 
 from _core import Core
 from _utils._cli_user_error import AlreadyReportedError
+from _utils._jinja_rich import configure_jinja_error_theme, normalize_theme_mode
 
 
 def get_args() -> argparse.Namespace:
@@ -29,6 +31,13 @@ def get_args() -> argparse.Namespace:
         action="store_true",
         help="将 models 实例化后的模板数据（渲染前）写出为 debug-models.json",
     )
+    default_theme = normalize_theme_mode(os.environ.get("JINJA_BUILD_THEME"))
+    parser.add_argument(
+        "--theme",
+        choices=("auto", "light", "dark", "none"),
+        default=default_theme,
+        help="错误输出配色：auto 自动、light 浅底、dark 深底、none 无彩色（也可用环境变量 JINJA_BUILD_THEME）",
+    )
     args = parser.parse_args()
     return args
 
@@ -40,7 +49,9 @@ def main(batch: list[str] | None, **kwargs: object) -> None:
 
 if __name__ == "__main__":
     args = get_args()
+    configure_jinja_error_theme(args.theme)
+    run_kwargs = {key: value for key, value in vars(args).items() if key != "theme"}
     try:
-        main(**vars(args))
+        main(**run_kwargs)
     except AlreadyReportedError:
         raise SystemExit(1) from None
