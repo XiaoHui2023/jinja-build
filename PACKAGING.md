@@ -10,26 +10,23 @@
 
 Windows 上若无法直接执行，可用 `bash tools/pack.sh`。
 
-脚本会创建或复用根目录 `.venv`，执行 `pip install -e .` 安装项目依赖，再调用 PyInstaller。详细参数与单入口构建见 [tools/README.md](tools/README.md)。
+脚本会创建或复用根目录 `.venv`，执行 `pip install -e .` 安装项目依赖，再调用 PyInstaller。详细参数见 [tools/README.md](tools/README.md)。
 
 | 命令 | 产物（`dist/`） |
 | --- | --- |
-| `./tools/pack.sh` 或 `all` | `jinja-build` 与 `jinja-build-schema` |
-| `./tools/pack.sh src` | `jinja-build` |
-| `./tools/pack.sh schema` | `jinja-build-schema` |
+| `./tools/pack.sh` 或 `src` | `jinja-build` / `jinja-build.exe` |
 
 Windows 产物为 `*.exe`，无 staticx 步骤。
 
 ## Linux staticx
 
-在 Linux 上，`tools/pack.sh` 对每个 ELF 产物再运行 **staticx**，需要系统已安装 **patchelf**（例如 `sudo apt install patchelf`）。**macOS** 当前跳过 staticx，仅保留 PyInstaller onefile。
+在 Linux 上，`tools/pack.sh` 对 ELF 产物再运行 **staticx**，需要系统已安装 **patchelf**（例如 `sudo apt install patchelf`）。**macOS** 当前跳过 staticx，仅保留 PyInstaller onefile。
 
 ## Spec 文件
 
 PyInstaller 规格放在仓库根目录：
 
 - `jinja-build-cli.spec` → `jinja-build`
-- `jinja-build-schema.spec` → `jinja-build-schema`
 
 ## 兼容边界
 

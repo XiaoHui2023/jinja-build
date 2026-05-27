@@ -18,6 +18,16 @@ def get_args() -> argparse.Namespace:
     input_group = parser.add_mutually_exclusive_group()
     input_group.add_argument("-i", "--input", type=str, help="输入配置文件")
     input_group.add_argument("-b", "--batch", nargs="+", type=str, help="批处理输入配置文件列表")
+    parser.add_argument(
+        "--debug-input",
+        action="store_true",
+        help="将配置文件解析结果（尚未实例化 models）写出为 debug-input.json",
+    )
+    parser.add_argument(
+        "--debug-models",
+        action="store_true",
+        help="将 models 实例化后的模板数据（渲染前）写出为 debug-models.json",
+    )
     args = parser.parse_args()
     return args
 

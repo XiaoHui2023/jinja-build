@@ -110,3 +110,10 @@
 | 参数 | 说明 | 默认 |
 | --- | --- | --- |
 | `-mf`, `--models-filename` | 模板目录中的数据结构文件名。 | `models.py` |
+
+### 调试输出
+
+| 参数 | 说明 | 默认 |
+| --- | --- | --- |
+| `--debug-input` | 将配置文件经 `load_config` 解析后的 dict 写出为 `debug-input.json`（尚未进入 `models.py`）。与当次 `-o` 输出目录一致；批处理时每个输入子目录各一份。 | 关 |
+| `--debug-models` | 将 `models` 实例化后、渲染模板前经 `to_dict` 整理的数据写出为 `debug-models.json`（含 `@property` 等模板可见字段）。 | 关 |

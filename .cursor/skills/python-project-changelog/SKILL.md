@@ -9,6 +9,11 @@ description: >-
 
 （最新在上。规则见 `~/.cursor/skills/agent-project-changelog/SKILL.md`。）
 
+## 2026-05-26
+
+- **决议**：删除 **`schema/`**、遗留 **`doc/`**、**`docs/`**、**`jinja-build-schema.spec`**、**`tests/test_schema.py`**；项目不再为模板仓库生成或维护 Markdown 结构说明，文档由用户在各模板仓库自行管理。
+- **决议**：**`tools/pack.sh`** 仅打主入口 **`jinja-build`**（`jinja-build-cli.spec`）；移除 `schema` / `all` 打包目标。
+
 ## 2026-05-21
 
 - **决议**：`cli/` 改名为 **`src/`**（主功能）；`doc/` 改名为 **`schema/`**（按仓库生成结构说明）；内部包 `_doc` → `_schema`，类 `Doc` → `Schema`；打包目标 `src`/`schema`，可执行文件 `jinja-build-schema`（`jinja-build-doc.spec` → `jinja-build-schema.spec`）；测试 `test_schema.py`。

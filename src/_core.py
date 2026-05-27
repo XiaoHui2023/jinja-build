@@ -1,4 +1,5 @@
 import inspect
+import json
 import os
 from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -19,6 +20,14 @@ class Core(BaseModel):
     batch: list[str] | None = Field(default=None, description="多个输入配置文件，共用同一套模板。")
     output: str = Field(description="输出文件或目录。")
     models_filename: str = Field(default="models.py", description="模板目录中的数据结构文件。")
+    debug_input: bool = Field(
+        default=False,
+        description="将配置文件解析结果写出为 debug-input.json（尚未实例化 models）。",
+    )
+    debug_models: bool = Field(
+        default=False,
+        description="将 models 实例化后的模板数据写出为 debug-models.json（渲染前）。",
+    )
 
     template_path: Path | None = None
     """模板目录路径"""
@@ -108,7 +117,11 @@ class Core(BaseModel):
     ) -> tuple[object, dict[str, object], dict[str, object], Path]:
         """把一个配置文件转换成一次渲染需要的数据。"""
         input_data = self._load_input_data(input_path)
+        if self.debug_input:
+            self._write_debug_json(output_path, "debug-input.json", input_data)
         input_model = models_type(**input_data)
+        if self.debug_models:
+            self._write_debug_json(output_path, "debug-models.json", jinja.to_dict(input_model))
         globals_data, filters_data = self._build_template_extras(class_map, input_model)
         return input_model, globals_data, filters_data, output_path
 
@@ -204,6 +217,23 @@ class Core(BaseModel):
         with open(dst, "w", encoding="utf-8") as f:
             f.write(data)
             print(f"output: {dst}")
+
+    def _debug_output_dir(self, output_path: Path) -> Path:
+        """调试 JSON 与当次渲染共用同一输出根目录。"""
+        if self.template_path is not None and self.template_path.is_file():
+            return output_path.parent
+        return output_path
+
+    def _write_debug_json(self, output_path: Path, filename: str, data: object) -> None:
+        """把调试数据写成 JSON 文件。"""
+        target_dir = self._debug_output_dir(output_path)
+        target_dir.mkdir(parents=True, exist_ok=True)
+        path = target_dir / filename
+        path.write_text(
+            json.dumps(data, ensure_ascii=False, indent=2, default=str) + "\n",
+            encoding="utf-8",
+        )
+        print(f"debug: {path}")
 
 
 __all__ = [

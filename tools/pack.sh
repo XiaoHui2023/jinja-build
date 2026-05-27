@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# 统一打包：使用仓库根 .venv，先 PyInstaller（各入口 spec），Linux 再 staticx 得到自解压静态包。
+# 统一打包：使用仓库根 .venv，先 PyInstaller（主入口 spec），Linux 再 staticx 得到自解压静态包。
 # Windows 仅 PyInstaller（无 staticx）。
 #
-# 用法（仓库根）：./tools/pack.sh [all|src|schema]
+# 用法（仓库根）：./tools/pack.sh [src]
 # Linux 另需系统包 patchelf（如 apt install patchelf）。
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
-TARGET="${1:-all}"
+TARGET="${1:-src}"
 
 ensure_venv() {
   if [[ -f "$ROOT/.venv/Scripts/python.exe" ]]; then
@@ -40,25 +40,6 @@ ensure_venv() {
   echo "==> 使用虚拟环境: ${PYTHON_CMD[*]} ($("${PYTHON_CMD[@]}" -V 2>/dev/null || true))"
 }
 
-spec_for_target() {
-  case "$1" in
-    src) echo "$ROOT/jinja-build-cli.spec" ;;
-    schema) echo "$ROOT/jinja-build-schema.spec" ;;
-    *)
-      echo "错误: 未知目标 $1（可用: all、src、schema）。" >&2
-      exit 1
-      ;;
-  esac
-}
-
-dist_name_for_target() {
-  case "$1" in
-    src) echo "jinja-build" ;;
-    schema) echo "jinja-build-schema" ;;
-    *) exit 1 ;;
-  esac
-}
-
 apply_staticx_linux() {
   local dist_name="$1"
   local pyi_out="$ROOT/dist/${dist_name}"
@@ -84,18 +65,15 @@ apply_staticx_linux() {
   echo "完成: $pyi_out（staticx 自解压包；请在目标机实测）"
 }
 
-build_target() {
-  local name="$1"
-  local spec
-  spec="$(spec_for_target "$name")"
+build_cli() {
+  local spec="$ROOT/jinja-build-cli.spec"
   if [[ ! -f "$spec" ]]; then
     echo "错误: 未找到 $spec" >&2
     exit 1
   fi
   echo "==> PyInstaller: $spec"
   "${PYTHON_CMD[@]}" -m PyInstaller --clean --noconfirm "$spec"
-  local dist_name
-  dist_name="$(dist_name_for_target "$name")"
+  local dist_name="jinja-build"
   if [[ -f "$ROOT/dist/${dist_name}.exe" ]]; then
     echo "完成: $ROOT/dist/${dist_name}.exe（Windows：无 staticx 步骤）"
     return 0
@@ -119,16 +97,11 @@ ensure_venv
 rm -rf "$ROOT/build" "$ROOT/dist"
 
 case "$TARGET" in
-  all)
-    build_target src
-    rm -rf "$ROOT/build"
-    build_target schema
-    ;;
-  src|schema)
-    build_target "$TARGET"
+  src|"")
+    build_cli
     ;;
   *)
-    echo "用法: ./tools/pack.sh [all|src|schema]" >&2
+    echo "用法: ./tools/pack.sh [src]" >&2
     exit 1
     ;;
 esac

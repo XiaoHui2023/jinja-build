@@ -51,6 +51,7 @@ class TemplateProject:
         output: str | None = None,
         models_filename: str = "models.py",
         template: str | None = None,
+        **kwargs: object,
     ) -> None:
         Core(
             template=template or str(self.template),
@@ -58,6 +59,7 @@ class TemplateProject:
             batch=batch,
             output=output or str(self.output),
             models_filename=models_filename,
+            **kwargs,
         ).run()
 
     def read_output(self, rel: str) -> str:

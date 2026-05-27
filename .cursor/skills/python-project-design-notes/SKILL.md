@@ -11,16 +11,11 @@ description: >-
 
 ## 设计意图（像设计图）
 
-**jinja-build** 用 Jinja2 把「模板 + 输入配置 + 模板目录内的 `models.py`」生成一组输出文件。两个入口：
+**jinja-build** 用 Jinja2 把「模板 + 输入配置 + 模板目录内的 `models.py`」生成一组输出文件。单一入口 **`src/`**：本地渲染，`-t` 模板、`-i`/`-b` 输入、`-o` 输出。
 
-| 入口 | 目录 | 职责 |
-| --- | --- | --- |
-| 主功能 | `src/` | 本地渲染：`-t` 模板、`-i`/`-b` 输入、`-o` 输出 |
-| 结构说明 | `schema/` | 扫描模板根，为含 `models.py` 的仓库生成/监听 Markdown 结构说明 |
+**不做**：HTTP 服务、callback 编排、Verilog filelist、捆绑 rg/fd、为模板仓库自动生成或维护 Markdown 结构说明（由用户在各自仓库自行维护文档）。
 
-**不做**：HTTP 服务、callback 编排、Verilog filelist、捆绑 rg/fd。
-
-代码按入口分目录（`src/`、`schema/`），`__main__.py` 为脚本入口；包内用 `_` 前缀模块（主入口 `from _core import Core`，结构说明 `from _schema import Schema`）。**非** setuptools 单包 `src layout`（无 `src/jinja_build/` 包名目录）。
+`src/__main__.py` 为脚本入口；包内用 `_` 前缀模块（`from _core import Core`）。**非** setuptools 单包 `src layout`（无 `src/jinja_build/` 包名目录）。
 
 ## 主入口 · 数据流与模板环境
 
@@ -87,36 +82,18 @@ description: >-
 | `--batch` | `-b` | 多份输入，与 `-i` 互斥 |
 | `--models-filename` | `-mf` | 默认 `models.py` |
 
-## Schema · 设计特性摘要
-
-- 在 `-t` 根下找含 `models_filename` 的目录为**仓库**；发现后不再向子层拆仓库。
-- 每仓库独立指纹与生成；单仓失败不阻塞其他仓；失败后内容未变则不反复重试。
-- 默认 `run_once`；`-w` 持续监听，`-i` 间隔秒数。
-- 生成结束后再查变更，渲染期间有改动则**补跑一次**。
-- 支持 Pydantic 与 dataclass，输出 Markdown 字段表；逻辑在 `schema/_schema/`。
-- 门面类 **`Schema`**（`schema/_schema/_core.py`）。
-
-| 长参数 | 短参数 | 说明 |
-| --- | --- | --- |
-| `--template` | `-t` | 模板根 |
-| `--output` | `-o` | 文档输出根 |
-| `--log` | `-l` | 日志目录 |
-| `--models-filename` | `-mf` | 默认 `models.py` |
-| `--interval` | `-i` | 监听间隔，默认 `1.0` |
-| `--watch` | `-w` | 持续监听 |
-
 ## 来自用户/团队的硬性要求
 
-1. **依赖**：`Jinja2`、`pydantic`、`python-library-configlib==0.1.0`；`packages = []`，`pip install -e .` 只拉依赖。
+1. **依赖**：`Jinja2`、`pydantic`、`python-library-configlib==0.1.1`；`packages = []`，`pip install -e .` 只拉依赖。
 2. **开发脚本**：Windows 用 `update.bat`、`test.bat`、`example.bat <示范名>`；Linux/macOS/Git Bash 用 `update.sh`、`test.sh`、`example.sh <示范名>`。均在仓库根 `.venv` 下执行；测试为 `python -m unittest discover -s tests`。
-3. **文档分工**：用户向 `src/README.md`、`schema/README.md`、`docs/`（子文档索引见 `docs/README.md`，如 `docs/models-py.md`）；Agent 口径**只**在本 skill；禁止把本 skill 全文抄进源码注释或 README。
+3. **文档分工**：用户向 `src/README.md`、`examples/` 各子目录 README；模板仓库的说明文档由用户自行维护。Agent 口径**只**在本 skill；禁止把本 skill 全文抄进源码注释或 README。
 4. **中文措辞**：`forbidden-doc-comment-vocabulary`；README 文首不写命令表。
 
 ## 打包（PyInstaller + staticx）
 
-- `tools/pack.sh`：`all` | `src` | `schema`；`.venv` + `pip install -e .` + PyInstaller；Linux 再 staticx（`patchelf`）。
-- 根目录 `jinja-build-cli.spec`（主入口）、`jinja-build-schema.spec`；`upx=False`；无 `tools/bin` 捆绑。
-- 可执行名：`jinja-build`、`jinja-build-schema`。
+- `tools/pack.sh`：默认打主入口；`.venv` + `pip install -e .` + PyInstaller；Linux 再 staticx（`patchelf`）。
+- 根目录 `jinja-build-cli.spec`；`upx=False`；无 `tools/bin` 捆绑。
+- 可执行名：`jinja-build`。
 
 ## 与当前实现的对齐
 

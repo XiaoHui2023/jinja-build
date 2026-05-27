@@ -199,6 +199,71 @@ class CoreRenderTests(unittest.TestCase):
                 "ADA|odo|title:ada\n3|6",
             )
 
+    def test_debug_input_and_debug_models_write_json(self) -> None:
+        """调试开关在渲染前写出解析配置与 models 数据。"""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            template = root / "template"
+            output = root / "output"
+            template.mkdir()
+            (template / "models.py").write_text(
+                "from pydantic import BaseModel\n"
+                "\n"
+                "class Data(BaseModel):\n"
+                "    name: str\n"
+                "\n"
+                "    @property\n"
+                "    def label(self) -> str:\n"
+                "        return self.name.upper()\n",
+                encoding="utf-8",
+            )
+            (template / "out.j2").write_text("{{ name }} {{ label }}\n", encoding="utf-8")
+            self._write_json(root / "in.json", {"name": "hi"})
+
+            Core(
+                template=str(template),
+                input=str(root / "in.json"),
+                output=str(output),
+                debug_input=True,
+                debug_models=True,
+            ).run()
+
+            debug_in = json.loads((output / "debug-input.json").read_text(encoding="utf-8"))
+            debug_models = json.loads((output / "debug-models.json").read_text(encoding="utf-8"))
+            self.assertEqual(debug_in, {"name": "hi"})
+            self.assertEqual(debug_models["name"], "hi")
+            self.assertEqual(debug_models["label"], "HI")
+            self.assertEqual((output / "out").read_text(encoding="utf-8").rstrip("\n"), "hi HI")
+
+    def test_debug_json_per_batch_input_directory(self) -> None:
+        """批处理时每个输入在各自输出子目录写出调试 JSON。"""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            template = root / "template"
+            output = root / "output"
+            template.mkdir()
+            self._write_model(template)
+            (template / "name.txt.j2").write_text("{{ name }}\n", encoding="utf-8")
+            self._write_json(root / "a.json", {"name": "alpha"})
+            self._write_json(root / "b.json", {"name": "beta"})
+
+            Core(
+                template=str(template),
+                batch=[str(root / "a.json"), str(root / "b.json")],
+                output=str(output),
+                debug_input=True,
+                debug_models=True,
+            ).run()
+
+            self.assertEqual(
+                json.loads((output / "a" / "debug-input.json").read_text(encoding="utf-8")),
+                {"name": "alpha"},
+            )
+            self.assertEqual(
+                json.loads((output / "b" / "debug-models.json").read_text(encoding="utf-8")),
+                {"name": "beta"},
+            )
+
     def test_dynamic_loading_restores_sys_path(self) -> None:
         """动态导入期间可读同目录辅助文件，结束后恢复搜索路径。"""
         with tempfile.TemporaryDirectory() as tmp:
