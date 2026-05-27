@@ -11,6 +11,7 @@ description: >-
 
 ## 2026-05-26
 
+- **决议**：新增 **`tools/pack.bat`**，与 **`tools/pack.sh`** 并列；Windows 用 `tools\pack.bat`，Unix 用 `./tools/pack.sh`；更新 **`PACKAGING.md`**、**`tools/README.md`** 与用户根 **`python-pyinstaller-staticx-packaging`** skill。
 - **决议**：删除 **`schema/`**、遗留 **`doc/`**、**`docs/`**、**`jinja-build-schema.spec`**、**`tests/test_schema.py`**；项目不再为模板仓库生成或维护 Markdown 结构说明，文档由用户在各模板仓库自行管理。
 - **决议**：**`tools/pack.sh`** 仅打主入口 **`jinja-build`**（`jinja-build-cli.spec`）；移除 `schema` / `all` 打包目标。
 

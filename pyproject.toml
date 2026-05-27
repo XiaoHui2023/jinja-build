@@ -9,7 +9,8 @@ requires-python = ">=3.10"
 dependencies = [
     "Jinja2",
     "pydantic",
-    "python-library-configlib==0.1.1",
+    "python-library-configlib==0.1.2",
+    "rich",
 ]
 
 [tool.setuptools]

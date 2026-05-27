@@ -2,7 +2,7 @@
 # 统一打包：使用仓库根 .venv，先 PyInstaller（主入口 spec），Linux 再 staticx 得到自解压静态包。
 # Windows 仅 PyInstaller（无 staticx）。
 #
-# 用法（仓库根）：./tools/pack.sh [src]
+# 用法（仓库根）：./tools/pack.sh [src]（Windows 批处理见 tools/pack.bat）
 # Linux 另需系统包 patchelf（如 apt install patchelf）。
 set -euo pipefail
 

@@ -91,9 +91,9 @@ description: >-
 
 ## 打包（PyInstaller + staticx）
 
-- `tools/pack.sh`：默认打主入口；`.venv` + `pip install -e .` + PyInstaller；Linux 再 staticx（`patchelf`）。
+- **`tools/pack.sh`**（Linux / macOS / Git Bash）、**`tools/pack.bat`**（Windows）：默认打主入口；`.venv` + `pip install -e .` + PyInstaller；仅 `pack.sh` 在 Linux 上再 staticx（`patchelf`）。
 - 根目录 `jinja-build-cli.spec`；`upx=False`；无 `tools/bin` 捆绑。
-- 可执行名：`jinja-build`。
+- 可执行名：`jinja-build` / `jinja-build.exe`。
 
 ## 与当前实现的对齐
 
@@ -110,4 +110,3 @@ description: >-
 
 - 根目录总览 README 待定。
 - `staticmethod` / `classmethod` 是否纳入过滤器：当前仅普通实例方法。
-- Windows 可选 `tools/pack.bat`。

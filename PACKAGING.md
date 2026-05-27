@@ -4,17 +4,24 @@
 
 ## 一键打包
 
+### Linux / macOS / Git Bash
+
 ```bash
 ./tools/pack.sh
 ```
 
-Windows 上若无法直接执行，可用 `bash tools/pack.sh`。
+### Windows
+
+```bat
+tools\pack.bat
+```
 
 脚本会创建或复用根目录 `.venv`，执行 `pip install -e .` 安装项目依赖，再调用 PyInstaller。详细参数见 [tools/README.md](tools/README.md)。
 
 | 命令 | 产物（`dist/`） |
 | --- | --- |
-| `./tools/pack.sh` 或 `src` | `jinja-build` / `jinja-build.exe` |
+| `./tools/pack.sh` 或 `src` | `jinja-build` |
+| `tools\pack.bat` 或 `src` | `jinja-build.exe` |
 
 Windows 产物为 `*.exe`，无 staticx 步骤。
 

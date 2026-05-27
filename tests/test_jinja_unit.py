@@ -11,8 +11,11 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
+from jinja2.exceptions import UndefinedError  # noqa: E402
+
 from _utils import _filters, _jinja  # noqa: E402
 from _utils._dynamic_loading import get_definitions_in_order, load_module  # noqa: E402
+from _utils._jinja_view import TemplateView, resolve_attribute, wrap_for_template  # noqa: E402
 
 
 class ToDictTests(unittest.TestCase):
@@ -106,6 +109,88 @@ class JinjaBuiltinFilterCoexistenceTests(unittest.TestCase):
         tpl = env.from_string("{{ items | map(attribute='qty') | sum }}")
         out = tpl.render({"items": [{"qty": 2}, {"qty": 3}]})
         self.assertEqual(out, "5")
+
+
+class TemplateViewTests(unittest.TestCase):
+    def test_pydantic_field_then_alias(self) -> None:
+        class User(BaseModel):
+            city_name: str = Field(alias="city")
+
+        user = User(city="bj")
+        value, found = resolve_attribute(user, "city_name")
+        self.assertTrue(found)
+        self.assertEqual(value, "bj")
+        alias_value, alias_found = resolve_attribute(user, "city")
+        self.assertTrue(alias_found)
+        self.assertEqual(alias_value, "bj")
+
+    def test_property_after_fields(self) -> None:
+        class Row(BaseModel):
+            key: str
+
+            @property
+            def label(self) -> str:
+                return self.key.upper()
+
+        row = Row(key="ab")
+        self.assertEqual(resolve_attribute(row, "label"), ("AB", True))
+
+    def test_nested_view_keeps_path(self) -> None:
+        class Inner(BaseModel):
+            n: int
+
+        class Outer(BaseModel):
+            inner: Inner
+
+        view = wrap_for_template(Outer(inner=Inner(n=3)))
+        self.assertIsInstance(view, TemplateView)
+        inner_view = view.get_attribute("inner")
+        self.assertIsInstance(inner_view, TemplateView)
+        self.assertEqual(inner_view.template_path, "root.inner")
+        self.assertEqual(inner_view.get_attribute("n"), 3)
+
+    def test_dict_key_lookup(self) -> None:
+        view = wrap_for_template({"items": [{"n": 1}]})
+        items = view.get_attribute("items")
+        self.assertEqual(items[0].get_attribute("n"), 1)
+
+
+class RenderWithTemplateViewTests(unittest.TestCase):
+    def test_render_pydantic_alias_and_property(self) -> None:
+        class User(BaseModel):
+            city_name: str = Field(alias="city")
+
+            @property
+            def tag(self) -> str:
+                return self.city_name.upper()
+
+        class Root(BaseModel):
+            user: User
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tpl = Path(tmp) / "t.j2"
+            tpl.write_text("{{ user.city }}|{{ user.tag }}", encoding="utf-8")
+            out = _jinja.render(tpl, Root(user=User(city="bj")))
+            self.assertEqual(out, "bj|BJ")
+
+    def test_undefined_error_names_model_type(self) -> None:
+        class User(BaseModel):
+            name: str
+
+        class Root(BaseModel):
+            user: User
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tpl = Path(tmp) / "t.j2"
+            tpl.write_text("{{ user.city }}", encoding="utf-8")
+            try:
+                _jinja.render(tpl, Root(user=User(name="x")))
+            except UndefinedError as exc:
+                self.assertIn("User", str(exc))
+                self.assertIn("city", str(exc))
+                self.assertIn("缺少模板字段", str(exc))
+                return
+            self.fail("expected UndefinedError")
 
 
 class RenderEnvironmentTests(unittest.TestCase):

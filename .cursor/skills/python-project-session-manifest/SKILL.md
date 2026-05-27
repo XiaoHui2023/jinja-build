@@ -44,3 +44,5 @@ description: >-
 - project-skill-manifest-policy | `~/.cursor/skills/project-skill-manifest-policy/SKILL.md`
 - agent-codegen-self-review | `~/.cursor/skills/agent-codegen-self-review/SKILL.md`
 - forbidden-doc-comment-vocabulary | `~/.cursor/skills/forbidden-doc-comment-vocabulary/SKILL.md`
+- python-pyinstaller-staticx-packaging | `~/.cursor/skills/python-pyinstaller-staticx-packaging/SKILL.md`
+- python-rich-terminal-colors | `~/.cursor/skills/python-rich-terminal-colors/SKILL.md`
