@@ -3,15 +3,15 @@ from rich.theme import Theme
 
 JINJA_ERROR_THEME = Theme(
     {
-        "error.title": "#e06c75",
-        "error.path": "#61afef",
-        "error.line_no": "#d19a66",
-        "error.line_body": "#abb2bf",
-        "error.line_highlight": "#e5c07b",
-        "error.caret": "#e06c75",
-        "error.dim": "#5c6370",
-        "error.label": "#c678dd",
-        "error.message": "#dcdfe4",
+        "error.title": "#dc2626",
+        "error.path": "#2563eb",
+        "error.line_no": "#d97706",
+        "error.line_body": "#6b7280",
+        "error.line_highlight": "#ca8a04",
+        "error.caret": "#dc2626",
+        "error.dim": "#71717a",
+        "error.label": "#9333ea",
+        "error.message": "#3f3f46",
     }
 )
 

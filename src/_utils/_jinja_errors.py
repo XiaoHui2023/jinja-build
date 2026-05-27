@@ -5,9 +5,12 @@ from pathlib import Path
 from types import TracebackType
 
 from jinja2.exceptions import TemplateError, TemplateNotFound, TemplateSyntaxError
-from rich.panel import Panel
+from rich.console import Group
+from rich.rule import Rule
+from rich.table import Table
 from rich.text import Text
 
+from ._error_card import error_title, hints_block, meta_grid, print_error_card
 from ._jinja_rich import jinja_error_console
 
 _TEMPLATE_SUFFIXES = (".j2", ".jinja", ".jinja2", ".html.j2", ".xml.j2", ".txt.j2")
@@ -80,59 +83,70 @@ def print_template_error(
     report = build_template_error_report(exc, entry_path=entry_path)
     console = jinja_error_console()
 
-    title = Text()
-    title.append(report.exc_type, style="error.title")
-    title.append(" — ", style="error.dim")
-    title.append(report.message, style="error.message")
-
-    console.print(Panel(title, border_style="error.title", padding=(0, 1)))
-
+    body: list[object] = []
     if report.entry_path is not None:
-        console.print(
-            Text.assemble(
-                ("入口模板", "error.label"),
-                ("  ", ""),
-                (str(report.entry_path), "error.path"),
-            )
+        body.append(
+            meta_grid([("入口模板", str(report.entry_path), "error.path")]),
         )
 
-    for index, site in enumerate(report.sites):
+    sites_group = _sites_group(report.sites)
+    if sites_group is not None:
+        body.append(sites_group)
+
+    hints = hints_block(report.extra)
+    if hints is not None:
+        body.append(hints)
+
+    print_error_card(
+        console,
+        title=error_title(report.exc_type, report.message),
+        body_parts=body,
+        context=None,
+    )
+
+
+def _sites_group(sites: tuple[TemplateErrorSite, ...]) -> Group | None:
+    if not sites:
+        return None
+    parts: list[Text | Rule | Group] = []
+    for index, site in enumerate(sites):
         if index > 0:
-            console.print(Text("↑ 由下列位置调用", style="error.dim"))
-        _print_site(console, site)
+            parts.append(Text("↑ 由下列位置调用", style="error.dim"))
+        block = _site_context_group(site)
+        if block is not None:
+            parts.append(block)
+    return Group(*parts) if parts else None
 
-    for line in report.extra:
-        console.print(Text(line, style="error.dim"))
 
-
-def _print_site(console: object, site: TemplateErrorSite) -> None:
+def _site_context_group(site: TemplateErrorSite) -> Group | None:
     header = Text()
     header.append(str(site.path), style="error.path")
     if site.location:
         header.append(f"  ({site.location})", style="error.dim")
-    console.print(header)  # type: ignore[attr-defined]
 
     if site.lineno < 1:
-        return
+        return Group(header)
 
     rows = _read_context_lines(site.path, site.lineno)
+    line_parts: list[Text] = [header]
     if not rows and site.line_text:
-        console.print(
+        line_parts.append(
             Text.assemble(
                 (f"{site.lineno:>4} ", "error.line_no"),
                 (site.line_text.rstrip(), "error.line_highlight"),
             )
-        )  # type: ignore[attr-defined]
-        return
+        )
+        return Group(*line_parts)
 
     for num, text, is_error in rows:
         style = "error.line_highlight" if is_error else "error.line_body"
-        console.print(
+        line_parts.append(
             Text.assemble(
                 (f"{num:>4} ", "error.line_no"),
                 (text.rstrip("\n"), style),
             )
-        )  # type: ignore[attr-defined]
+        )
+    return Group(*line_parts)
 
 
 def _read_context_lines(path: Path, lineno: int) -> list[tuple[int, str, bool]]:

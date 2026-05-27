@@ -183,14 +183,18 @@ class RenderWithTemplateViewTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             tpl = Path(tmp) / "t.j2"
             tpl.write_text("{{ user.city }}", encoding="utf-8")
+            from _utils._cli_user_error import AlreadyReportedError  # noqa: E402
+
             try:
                 _jinja.render(tpl, Root(user=User(name="x")))
-            except UndefinedError as exc:
+            except AlreadyReportedError as wrapper:
+                exc = wrapper.source
+                assert isinstance(exc, UndefinedError)
                 self.assertIn("User", str(exc))
                 self.assertIn("city", str(exc))
                 self.assertIn("缺少模板字段", str(exc))
                 return
-            self.fail("expected UndefinedError")
+            self.fail("expected AlreadyReportedError")
 
 
 class RenderEnvironmentTests(unittest.TestCase):

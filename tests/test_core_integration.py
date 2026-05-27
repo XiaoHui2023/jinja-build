@@ -312,12 +312,15 @@ class CoreInputValidationTests(unittest.TestCase):
             p.write_models("class Data:\n    pass\n")
             bad = p.root / "bad.json"
             bad.write_text("[1, 2, 3]", encoding="utf-8")
-            with self.assertRaises(TypeError):
+            from _utils._cli_user_error import AlreadyReportedError  # noqa: E402
+
+            with self.assertRaises(AlreadyReportedError) as ctx:
                 Core(
                     template=str(p.template),
                     input=str(bad),
                     output=str(p.output),
                 ).run()
+            self.assertIsInstance(ctx.exception.source, TypeError)
 
 
 class CoreRenderTests(unittest.TestCase):

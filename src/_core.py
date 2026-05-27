@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 
 from _utils import jinja
 from _utils._filters import build_model_method_filters
+from _utils._cli_user_error import raise_after_report
 from _utils._input_errors import print_input_model_error
 
 
@@ -131,7 +132,7 @@ class Core(BaseModel):
                 models_type=models_type,
                 stage="config",
             )
-            raise
+            raise_after_report(exc)
         if self.debug_input:
             self._write_debug_json(output_path, "debug-input.json", input_data)
         try:
@@ -144,7 +145,7 @@ class Core(BaseModel):
                 models_type=models_type,
                 stage="model",
             )
-            raise
+            raise_after_report(exc)
         if self.debug_models:
             self._write_debug_json(output_path, "debug-models.json", jinja.to_dict(input_model))
         globals_data, filters_data = self._build_template_extras(class_map, input_model)

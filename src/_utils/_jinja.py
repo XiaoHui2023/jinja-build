@@ -8,6 +8,7 @@ from jinja2.exceptions import TemplateError
 from ._dynamic_loading import load_module
 from ._jinja_convert import to_dict
 from ._jinja_env import SafeDictEnvironment, get_env, resolve_template_name
+from ._cli_user_error import raise_after_report
 from ._jinja_errors import print_template_error
 from ._jinja_view import build_render_context
 
@@ -43,13 +44,13 @@ def render(
         template = env.get_template(template_name)
     except TemplateError as exc:
         print_template_error(exc, entry_path=src_path)
-        raise
+        raise_after_report(exc)
 
     try:
         return template.render(build_render_context(data))
     except TemplateError as exc:
         print_template_error(exc, entry_path=src_path)
-        raise
+        raise_after_report(exc)
 
 
 def load_models(file_path: str | Path) -> list[type]:

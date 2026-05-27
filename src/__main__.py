@@ -1,6 +1,7 @@
 import argparse
 
 from _core import Core
+from _utils._cli_user_error import AlreadyReportedError
 
 
 def get_args() -> argparse.Namespace:
@@ -39,4 +40,7 @@ def main(batch: list[str] | None, **kwargs: object) -> None:
 
 if __name__ == "__main__":
     args = get_args()
-    main(**vars(args))
+    try:
+        main(**vars(args))
+    except AlreadyReportedError:
+        raise SystemExit(1) from None

@@ -13,6 +13,7 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
+from _utils._cli_user_error import AlreadyReportedError  # noqa: E402
 from _utils._input_errors import (  # noqa: E402
     build_input_load_error_report,
     print_input_model_error,
@@ -114,8 +115,9 @@ class CoreInputErrorIntegrationTests(unittest.TestCase):
             )
             p.write_json("in.json", {"items": [{"name": "a"}]})
             p.write_template("x.txt.j2", "{{ items[0].name }}\n")
-            with self.assertRaises(ValidationError):
+            with self.assertRaises(AlreadyReportedError) as ctx:
                 p.run(input_path=str(p.root / "in.json"))
+            self.assertIsInstance(ctx.exception.source, ValidationError)
 
 
 if __name__ == "__main__":

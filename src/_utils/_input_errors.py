@@ -7,11 +7,18 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from pydantic import BaseModel, ValidationError
-from rich.panel import Panel
 from rich.table import Table
-from rich.text import Text
 
+from pydantic import BaseModel, ValidationError
+
+from ._error_card import (
+    error_title,
+    field_errors_table,
+    file_context_group,
+    hints_block,
+    meta_grid,
+    print_error_card,
+)
 from ._jinja_rich import jinja_error_console
 
 _INPUT_VALUE_MAX = 120
@@ -94,93 +101,50 @@ def print_input_model_error(
         stage=stage,
     )
     console = jinja_error_console()
-
-    title = Text()
-    title.append(report.exc_type, style="error.title")
-    title.append(" — ", style="error.dim")
-    title.append(report.headline, style="error.message")
-    console.print(Panel(title, border_style="error.title", padding=(0, 1)))
-
-    console.print(
-        Text.assemble(
-            ("阶段", "error.label"),
-            ("  ", ""),
-            (_stage_description(report.stage), "error.dim"),
-        )
-    )
-    _print_meta(console, report)
-
-    if report.context_path is not None and report.context_lineno:
-        _print_file_context(console, report.context_path, report.context_lineno)
-
+    body: list[object] = [_meta_rows(report)]
     if report.field_errors:
-        table = Table(show_header=True, header_style="error.label", box=None, padding=(0, 1))
-        table.add_column("字段", style="error.path", no_wrap=True)
-        table.add_column("问题", style="error.message")
-        table.add_column("类型", style="error.dim", no_wrap=True)
-        table.add_column("收到", style="error.line_body")
-        for item in report.field_errors:
-            table.add_row(item.loc, item.message, item.kind, item.input_value)
-        console.print(table)
-
-    for hint in report.hints:
-        console.print(Text(hint, style="error.dim"))
-
-
-def _print_meta(console: object, report: InputLoadErrorReport) -> None:
-    if report.input_path is not None:
-        console.print(  # type: ignore[attr-defined]
-            Text.assemble(
-                ("输入配置", "error.label"),
-                ("  ", ""),
-                (str(report.input_path), "error.path"),
+        body.append(
+            field_errors_table(
+                (
+                    ("字段", "error.path"),
+                    ("问题", "error.message"),
+                    ("类型", "error.dim"),
+                    ("收到", "error.line_body"),
+                ),
+                tuple(
+                    (item.loc, item.message, item.kind, item.input_value)
+                    for item in report.field_errors
+                ),
             )
         )
-    else:
-        console.print(  # type: ignore[attr-defined]
-            Text.assemble(
-                ("输入配置", "error.label"),
-                ("  ", ""),
-                ("（未指定，使用空对象）", "error.dim"),
-            )
-        )
+    hints = hints_block(report.hints)
+    if hints is not None:
+        body.append(hints)
 
-    if report.models_type_name:
-        console.print(  # type: ignore[attr-defined]
-            Text.assemble(
-                ("数据类型", "error.label"),
-                ("  ", ""),
-                (report.models_type_name, "error.path"),
-            )
-        )
-    console.print(  # type: ignore[attr-defined]
-        Text.assemble(
-            ("models 文件", "error.label"),
-            ("  ", ""),
-            (str(report.models_path), "error.path"),
-        )
+    context = None
+    if report.context_path is not None and report.context_lineno:
+        context = file_context_group(report.context_path, report.context_lineno)
+
+    print_error_card(
+        console,
+        title=error_title(report.exc_type, report.headline),
+        body_parts=body,
+        context=context,
     )
 
 
-def _print_file_context(console: object, path: Path, lineno: int) -> None:
-    try:
-        lines = path.read_text(encoding="utf-8").splitlines()
-    except OSError:
-        return
-    if not lines or lineno < 1:
-        return
-
-    console.print(Text(str(path), style="error.path"))  # type: ignore[attr-defined]
-    start = max(1, lineno - 2)
-    end = min(len(lines), lineno + 2)
-    for num in range(start, end + 1):
-        style = "error.line_highlight" if num == lineno else "error.line_body"
-        console.print(  # type: ignore[attr-defined]
-            Text.assemble(
-                (f"{num:>4} ", "error.line_no"),
-                (lines[num - 1].rstrip("\n"), style),
-            )
-        )
+def _meta_rows(report: InputLoadErrorReport) -> Table:
+    rows: list[tuple[str, str, str]] = [
+        ("阶段", _stage_description(report.stage), "error.dim"),
+    ]
+    if report.input_path is not None:
+        rows.append(("输入配置", str(report.input_path), "error.path"))
+    else:
+        rows.append(("输入配置", "（未指定，使用空对象）", "error.dim"))
+    if report.models_type_name:
+        rows.append(("数据类型", report.models_type_name, "error.path"))
+    rows.append(("models 文件", str(report.models_path), "error.path"))
+    return meta_grid(rows)
 
 
 def _report_from_validation_error(
