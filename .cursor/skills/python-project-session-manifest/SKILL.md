@@ -15,10 +15,11 @@ description: >-
 3. `.cursor/skills/python-project-design-notes/SKILL.md`
 4. `.cursor/skills/python-project-changelog/SKILL.md`
 5. `~/.cursor/skills/python-doc-comments/SKILL.md`
+6. `~/.cursor/skills/python-script-environment-variables/SKILL.md`
 
 可选（改动较多时）：
 
-6. `~/.cursor/skills/agent-codegen-self-review/SKILL.md`
+7. `~/.cursor/skills/agent-codegen-self-review/SKILL.md`
 
 **本仓库无** `api`/`impl` callback 分层；勿预加载 `callback-api-impl-layers`、`impl-sink-rich-logging` 等，除非 design-notes 明确要求。
 

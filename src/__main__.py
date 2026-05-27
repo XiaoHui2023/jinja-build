@@ -1,9 +1,8 @@
 import argparse
-import os
 
 from _core import Core
 from _utils._cli_user_error import AlreadyReportedError
-from _utils._jinja_rich import configure_jinja_error_theme, normalize_theme_mode
+from _utils._jinja_rich import configure_jinja_error_theme
 
 
 def get_args() -> argparse.Namespace:
@@ -31,12 +30,11 @@ def get_args() -> argparse.Namespace:
         action="store_true",
         help="将 models 实例化后的模板数据（渲染前）写出为 debug-models.json",
     )
-    default_theme = normalize_theme_mode(os.environ.get("JINJA_BUILD_THEME"))
     parser.add_argument(
         "--theme",
         choices=("auto", "light", "dark", "none"),
-        default=default_theme,
-        help="错误输出配色：auto 自动、light 浅底、dark 深底、none 无彩色（也可用环境变量 JINJA_BUILD_THEME）",
+        default="auto",
+        help="错误配色：auto 仅读终端 COLORFGBG、否则 dark；light/dark/none 显式指定",
     )
     args = parser.parse_args()
     return args

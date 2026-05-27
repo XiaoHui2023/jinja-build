@@ -1,6 +1,6 @@
+import os
 import sys
 import unittest
-from io import StringIO
 from pathlib import Path
 from unittest import mock
 
@@ -65,16 +65,14 @@ class ThemeModeTests(unittest.TestCase):
             theme_for_background("light").styles["error.message"].color,
         )
 
-    def test_luminance_from_osc_rgb(self) -> None:
-        from _utils._jinja_rich import _luminance_from_osc_response  # noqa: E402
+    def test_detect_without_colorfgbg_is_unknown(self) -> None:
+        with mock.patch.dict(os.environ, {"COLORFGBG": ""}, clear=False):
+            self.assertEqual(detect_background(), "unknown")
 
-        dark = _luminance_from_osc_response("\x1b]11;rgb:1e1e/1e1e/1e1e\x07")
-        light = _luminance_from_osc_response("\x1b]11;rgb:ffff/ffff/ffff\x07")
-        self.assertIsNotNone(dark)
-        self.assertIsNotNone(light)
-        assert dark is not None and light is not None
-        self.assertLess(dark, 0.5)
-        self.assertGreater(light, 0.5)
+    def test_configure_auto_without_hint_is_instant(self) -> None:
+        with mock.patch("_utils._jinja_rich.detect_background", return_value="unknown"):
+            configure_jinja_error_theme("auto")
+            self.assertEqual(resolve_background("auto"), "dark")
 
 
 class MainThemeArgTests(unittest.TestCase):
@@ -93,21 +91,19 @@ class MainThemeArgTests(unittest.TestCase):
         spec.loader.exec_module(module)
         return module.get_args
 
-    def test_get_args_theme_default_from_env(self) -> None:
+    def test_get_args_theme_defaults_to_auto(self) -> None:
         get_args = self._get_args()
-        with mock.patch.dict("os.environ", {"JINJA_BUILD_THEME": "dark"}, clear=False):
-            with mock.patch("sys.argv", ["jinja-build", "-t", "x", "-o", "y"]):
-                args = get_args()
-        self.assertEqual(args.theme, "dark")
+        with mock.patch("sys.argv", ["jinja-build", "-t", "x", "-o", "y"]):
+            args = get_args()
+        self.assertEqual(args.theme, "auto")
 
-    def test_get_args_theme_explicit_overrides_env(self) -> None:
+    def test_get_args_theme_explicit(self) -> None:
         get_args = self._get_args()
-        with mock.patch.dict("os.environ", {"JINJA_BUILD_THEME": "dark"}, clear=False):
-            with mock.patch(
-                "sys.argv",
-                ["jinja-build", "-t", "x", "-o", "y", "--theme", "light"],
-            ):
-                args = get_args()
+        with mock.patch(
+            "sys.argv",
+            ["jinja-build", "-t", "x", "-o", "y", "--theme", "light"],
+        ):
+            args = get_args()
         self.assertEqual(args.theme, "light")
 
 

@@ -81,7 +81,7 @@ description: >-
 | `--input` | `-i` | 单份输入配置；省略则空 dict |
 | `--batch` | `-b` | 多份输入，与 `-i` 互斥 |
 | `--models-filename` | `-mf` | 默认 `models.py` |
-| `--theme` | — | 错误配色：`auto` / `light` / `dark` / `none`；默认同 `JINJA_BUILD_THEME`，再默认 `auto` |
+| `--theme` | — | 错误配色：`auto`（仅读 `COLORFGBG`，否则 dark）/ `light` / `dark` / `none`；默认 `auto` |
 
 ## 来自用户/团队的硬性要求
 

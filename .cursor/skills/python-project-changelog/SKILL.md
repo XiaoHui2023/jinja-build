@@ -9,6 +9,10 @@ description: >-
 
 （最新在上。规则见 `~/.cursor/skills/agent-project-changelog/SKILL.md`。）
 
+## 2026-05-27
+
+- **决议**：移除自创环境变量 **`JINJA_BUILD_THEME`**；错误配色仅 **`--theme`**（默认 `auto`）。用户根新增 **`python-script-environment-variables`** skill；已列入预加载与 **`agent-project-preload`** Python 表。
+
 ## 2026-05-26
 
 - **决议**：新增 **`tools/pack.bat`**，与 **`tools/pack.sh`** 并列；Windows 用 `tools\pack.bat`，Unix 用 `./tools/pack.sh`；更新 **`PACKAGING.md`**、**`tools/README.md`** 与用户根 **`python-pyinstaller-staticx-packaging`** skill。
