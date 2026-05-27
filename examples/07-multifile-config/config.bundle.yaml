@@ -1,0 +1,22 @@
+#a.yaml
+!include spec.yaml
+class_prefix: CLock_
+trees:
+  - name: orion
+  - nodes: ${vars.nodes}
+
+# spec.yaml
+vars:
+  nodes:
+    !include b.json
+    !include c.yaml
+
+# b.json
+{
+  "a": {"name": 6},
+  "b": {"name": 7}
+}
+
+# c.yaml
+a:
+  freq: 128

@@ -11,6 +11,7 @@ description: >-
 
 ## 2026-05-27
 
+- **决议**：输入配置支持 `#<文件名>` 单文件捆绑（`src/_utils/_config_bundle.py`）；`!include` 与 `${}` 由 **configlib 0.1.3** 提供；示范 `examples/07-multifile-config`。
 - **决议**：移除自创环境变量 **`JINJA_BUILD_THEME`**；错误配色仅 **`--theme`**（默认 `auto`）。用户根新增 **`python-script-environment-variables`** skill；已列入预加载与 **`agent-project-preload`** Python 表。
 
 ## 2026-05-26

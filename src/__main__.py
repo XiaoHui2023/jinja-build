@@ -22,13 +22,15 @@ def get_args() -> argparse.Namespace:
     input_group.add_argument("-b", "--batch", nargs="+", type=str, help="批处理输入配置文件列表")
     parser.add_argument(
         "--debug-input",
-        action="store_true",
-        help="将配置文件解析结果（尚未实例化 models）写出为 debug-input.json",
+        type=str,
+        metavar="PATH",
+        help="将配置文件解析结果（尚未实例化 models）写出为 PATH；相对路径相对当次 -o 输出根",
     )
     parser.add_argument(
         "--debug-models",
-        action="store_true",
-        help="将 models 实例化后的模板数据（渲染前）写出为 debug-models.json",
+        type=str,
+        metavar="PATH",
+        help="将 models 实例化后的模板数据（渲染前）写出为 PATH；相对路径相对当次 -o 输出根",
     )
     parser.add_argument(
         "--theme",

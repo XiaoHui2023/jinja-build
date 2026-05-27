@@ -200,7 +200,7 @@ class CoreRenderTests(unittest.TestCase):
             )
 
     def test_debug_input_and_debug_models_write_json(self) -> None:
-        """调试开关在渲染前写出解析配置与 models 数据。"""
+        """调试路径在渲染前写出解析配置与 models 数据。"""
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             template = root / "template"
@@ -224,8 +224,8 @@ class CoreRenderTests(unittest.TestCase):
                 template=str(template),
                 input=str(root / "in.json"),
                 output=str(output),
-                debug_input=True,
-                debug_models=True,
+                debug_input="debug-input.json",
+                debug_models="debug-models.json",
             ).run()
 
             debug_in = json.loads((output / "debug-input.json").read_text(encoding="utf-8"))
@@ -234,6 +234,39 @@ class CoreRenderTests(unittest.TestCase):
             self.assertEqual(debug_models["name"], "hi")
             self.assertEqual(debug_models["label"], "HI")
             self.assertEqual((output / "out").read_text(encoding="utf-8").rstrip("\n"), "hi HI")
+
+    def test_debug_paths_absolute(self) -> None:
+        """绝对调试路径按用户指定位置写出。"""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            template = root / "template"
+            output = root / "output"
+            debug_dir = root / "debug"
+            template.mkdir()
+            (template / "models.py").write_text(
+                "from pydantic import BaseModel\n"
+                "\n"
+                "class Data(BaseModel):\n"
+                "    name: str\n",
+                encoding="utf-8",
+            )
+            (template / "out.j2").write_text("{{ name }}\n", encoding="utf-8")
+            self._write_json(root / "in.json", {"name": "abs"})
+
+            Core(
+                template=str(template),
+                input=str(root / "in.json"),
+                output=str(output),
+                debug_input=str(debug_dir / "parsed.json"),
+                debug_models=str(debug_dir / "model.json"),
+            ).run()
+
+            self.assertEqual(
+                json.loads((debug_dir / "parsed.json").read_text(encoding="utf-8")),
+                {"name": "abs"},
+            )
+            model_data = json.loads((debug_dir / "model.json").read_text(encoding="utf-8"))
+            self.assertEqual(model_data["name"], "abs")
 
     def test_debug_json_per_batch_input_directory(self) -> None:
         """批处理时每个输入在各自输出子目录写出调试 JSON。"""
@@ -251,8 +284,8 @@ class CoreRenderTests(unittest.TestCase):
                 template=str(template),
                 batch=[str(root / "a.json"), str(root / "b.json")],
                 output=str(output),
-                debug_input=True,
-                debug_models=True,
+                debug_input="debug-input.json",
+                debug_models="debug-models.json",
             ).run()
 
             self.assertEqual(

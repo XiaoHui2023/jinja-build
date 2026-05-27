@@ -9,8 +9,9 @@ from configlib import load_config
 from pydantic import BaseModel, Field
 
 from _utils import jinja
-from _utils._filters import build_model_method_filters
 from _utils._cli_user_error import raise_after_report
+from _utils._config_bundle import load_bundle_config
+from _utils._filters import build_model_method_filters
 from _utils._input_errors import print_input_model_error
 
 
@@ -22,13 +23,13 @@ class Core(BaseModel):
     batch: list[str] | None = Field(default=None, description="多个输入配置文件，共用同一套模板。")
     output: str = Field(description="输出文件或目录。")
     models_filename: str = Field(default="models.py", description="模板目录中的数据结构文件。")
-    debug_input: bool = Field(
-        default=False,
-        description="将配置文件解析结果写出为 debug-input.json（尚未实例化 models）。",
+    debug_input: str | None = Field(
+        default=None,
+        description="将配置文件解析结果写出为指定 JSON 路径（尚未实例化 models）。",
     )
-    debug_models: bool = Field(
-        default=False,
-        description="将 models 实例化后的模板数据写出为 debug-models.json（渲染前）。",
+    debug_models: str | None = Field(
+        default=None,
+        description="将 models 实例化后的模板数据写出为指定 JSON 路径（渲染前）。",
     )
 
     template_path: Path | None = None
@@ -134,7 +135,10 @@ class Core(BaseModel):
             )
             raise_after_report(exc)
         if self.debug_input:
-            self._write_debug_json(output_path, "debug-input.json", input_data)
+            self._write_debug_json(
+                self._resolve_debug_path(self.debug_input, output_path),
+                input_data,
+            )
         try:
             input_model = models_type(**input_data)
         except BaseException as exc:
@@ -147,7 +151,10 @@ class Core(BaseModel):
             )
             raise_after_report(exc)
         if self.debug_models:
-            self._write_debug_json(output_path, "debug-models.json", jinja.to_dict(input_model))
+            self._write_debug_json(
+                self._resolve_debug_path(self.debug_models, output_path),
+                jinja.to_dict(input_model),
+            )
         globals_data, filters_data = self._build_template_extras(class_map, input_model)
         return input_model, globals_data, filters_data, output_path
 
@@ -156,7 +163,10 @@ class Core(BaseModel):
         if not input_path:
             return {}
 
-        loaded = load_config(input_path)
+        path = Path(input_path).resolve()
+        loaded = load_bundle_config(path)
+        if loaded is None:
+            loaded = load_config(path)
         if loaded is None:
             return {}
         if isinstance(loaded, Mapping):
@@ -245,16 +255,21 @@ class Core(BaseModel):
             print(f"output: {dst}")
 
     def _debug_output_dir(self, output_path: Path) -> Path:
-        """调试 JSON 与当次渲染共用同一输出根目录。"""
+        """相对调试路径的基准目录（与当次渲染输出根一致）。"""
         if self.template_path is not None and self.template_path.is_file():
             return output_path.parent
         return output_path
 
-    def _write_debug_json(self, output_path: Path, filename: str, data: object) -> None:
+    def _resolve_debug_path(self, debug_path: str, output_path: Path) -> Path:
+        """绝对路径原样使用；相对路径相对当次输出根解析。"""
+        path = Path(debug_path)
+        if path.is_absolute():
+            return path
+        return self._debug_output_dir(output_path) / path
+
+    def _write_debug_json(self, path: Path, data: object) -> None:
         """把调试数据写成 JSON 文件。"""
-        target_dir = self._debug_output_dir(output_path)
-        target_dir.mkdir(parents=True, exist_ok=True)
-        path = target_dir / filename
+        path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(
             json.dumps(data, ensure_ascii=False, indent=2, default=str) + "\n",
             encoding="utf-8",

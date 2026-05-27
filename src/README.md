@@ -34,6 +34,8 @@
 
 只要加载器认得，输入配置就不限于某一种文件格式。后续仍会进入同一条数据整理流程。
 
+YAML 支持 `!include` 引用同目录或其它相对路径文件；同一 mapping 下多行 `!include` 会深合并。也可用单文件捆绑：首行起用 `#文件名` 分段（如 `#a.yaml`），每段当作独立虚拟文件，入口为第一段。见 `examples/07-multifile-config`。
+
 刚开始搭模板时，也可以先按空配置跑起来，再逐步补数据。
 
 ### 空白输出
@@ -115,5 +117,5 @@
 
 | 参数 | 说明 | 默认 |
 | --- | --- | --- |
-| `--debug-input` | 将配置文件经 `load_config` 解析后的 dict 写出为 `debug-input.json`（尚未进入 `models.py`）。与当次 `-o` 输出目录一致；批处理时每个输入子目录各一份。 | 关 |
-| `--debug-models` | 将 `models` 实例化后、渲染模板前经 `to_dict` 整理的数据写出为 `debug-models.json`（含 `@property` 等模板可见字段）。 | 关 |
+| `--debug-input` `PATH` | 将配置文件经 `load_config` 解析后的 dict 写出为 `PATH`（尚未进入 `models.py`）。`PATH` 为绝对路径时原样使用；为相对路径时相对当次 `-o` 输出根；批处理时相对各输入的 `output/<stem>/`。 | 无 |
+| `--debug-models` `PATH` | 将 `models` 实例化后、渲染模板前经 `to_dict` 整理的数据写出为 `PATH`（含 `@property` 等模板可见字段）。路径规则同 `--debug-input`。 | 无 |

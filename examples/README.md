@@ -12,6 +12,7 @@
 | [04-optional-output](04-optional-output/README.md) | 用开关控制是否生成某个文件（空白结果自动跳过） |
 | [05-models-imports](05-models-imports/README.md) | `models.py` 引用同目录 Python 包（绝对导入） |
 | [06-config-variables](06-config-variables/README.md) | 配置文件中的 `${}` 变量引用 |
+| [07-multifile-config](07-multifile-config/README.md) | 多文件配置：`# 文件名` 捆绑与 `!include` |
 
 ## 生成方式
 
