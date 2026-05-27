@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 
 from _utils import jinja
 from _utils._filters import build_model_method_filters
+from _utils._input_errors import print_input_model_error
 
 
 class Core(BaseModel):
@@ -116,10 +117,34 @@ class Core(BaseModel):
         output_path: Path,
     ) -> tuple[object, dict[str, object], dict[str, object], Path]:
         """把一个配置文件转换成一次渲染需要的数据。"""
-        input_data = self._load_input_data(input_path)
+        if self.models_path is None:
+            raise RuntimeError("models path is not ready")
+        models_path = self.models_path
+        resolved_input = Path(input_path).resolve() if input_path else None
+        try:
+            input_data = self._load_input_data(input_path)
+        except BaseException as exc:
+            print_input_model_error(
+                exc,
+                input_path=resolved_input,
+                models_path=models_path,
+                models_type=models_type,
+                stage="config",
+            )
+            raise
         if self.debug_input:
             self._write_debug_json(output_path, "debug-input.json", input_data)
-        input_model = models_type(**input_data)
+        try:
+            input_model = models_type(**input_data)
+        except BaseException as exc:
+            print_input_model_error(
+                exc,
+                input_path=resolved_input,
+                models_path=models_path,
+                models_type=models_type,
+                stage="model",
+            )
+            raise
         if self.debug_models:
             self._write_debug_json(output_path, "debug-models.json", jinja.to_dict(input_model))
         globals_data, filters_data = self._build_template_extras(class_map, input_model)
