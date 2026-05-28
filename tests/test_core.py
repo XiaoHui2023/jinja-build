@@ -1,4 +1,5 @@
 import json
+import os
 import sys
 import tempfile
 import unittest
@@ -220,16 +221,21 @@ class CoreRenderTests(unittest.TestCase):
             (template / "out.j2").write_text("{{ name }} {{ label }}\n", encoding="utf-8")
             self._write_json(root / "in.json", {"name": "hi"})
 
-            Core(
-                template=str(template),
-                input=str(root / "in.json"),
-                output=str(output),
-                debug_input="debug-input.json",
-                debug_models="debug-models.json",
-            ).run()
+            prev_cwd = os.getcwd()
+            try:
+                os.chdir(root)
+                Core(
+                    template=str(template),
+                    input=str(root / "in.json"),
+                    output=str(output),
+                    debug_input="debug-input.json",
+                    debug_models="debug-models.json",
+                ).run()
+            finally:
+                os.chdir(prev_cwd)
 
-            debug_in = json.loads((output / "debug-input.json").read_text(encoding="utf-8"))
-            debug_models = json.loads((output / "debug-models.json").read_text(encoding="utf-8"))
+            debug_in = json.loads((root / "debug-input.json").read_text(encoding="utf-8"))
+            debug_models = json.loads((root / "debug-models.json").read_text(encoding="utf-8"))
             self.assertEqual(debug_in, {"name": "hi"})
             self.assertEqual(debug_models["name"], "hi")
             self.assertEqual(debug_models["label"], "HI")
@@ -268,8 +274,8 @@ class CoreRenderTests(unittest.TestCase):
             model_data = json.loads((debug_dir / "model.json").read_text(encoding="utf-8"))
             self.assertEqual(model_data["name"], "abs")
 
-    def test_debug_json_per_batch_input_directory(self) -> None:
-        """批处理时每个输入在各自输出子目录写出调试 JSON。"""
+    def test_debug_json_relative_to_cwd_in_batch(self) -> None:
+        """批处理时相对调试路径仍相对当前工作目录，同名文件以后一次输入为准。"""
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             template = root / "template"
@@ -280,20 +286,25 @@ class CoreRenderTests(unittest.TestCase):
             self._write_json(root / "a.json", {"name": "alpha"})
             self._write_json(root / "b.json", {"name": "beta"})
 
-            Core(
-                template=str(template),
-                batch=[str(root / "a.json"), str(root / "b.json")],
-                output=str(output),
-                debug_input="debug-input.json",
-                debug_models="debug-models.json",
-            ).run()
+            prev_cwd = os.getcwd()
+            try:
+                os.chdir(root)
+                Core(
+                    template=str(template),
+                    batch=[str(root / "a.json"), str(root / "b.json")],
+                    output=str(output),
+                    debug_input="debug-input.json",
+                    debug_models="debug-models.json",
+                ).run()
+            finally:
+                os.chdir(prev_cwd)
 
             self.assertEqual(
-                json.loads((output / "a" / "debug-input.json").read_text(encoding="utf-8")),
-                {"name": "alpha"},
+                json.loads((root / "debug-input.json").read_text(encoding="utf-8")),
+                {"name": "beta"},
             )
             self.assertEqual(
-                json.loads((output / "b" / "debug-models.json").read_text(encoding="utf-8")),
+                json.loads((root / "debug-models.json").read_text(encoding="utf-8")),
                 {"name": "beta"},
             )
 

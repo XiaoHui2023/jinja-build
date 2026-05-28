@@ -136,7 +136,7 @@ class Core(BaseModel):
             raise_after_report(exc)
         if self.debug_input:
             self._write_debug_json(
-                self._resolve_debug_path(self.debug_input, output_path),
+                self._resolve_debug_path(self.debug_input),
                 input_data,
             )
         try:
@@ -152,7 +152,7 @@ class Core(BaseModel):
             raise_after_report(exc)
         if self.debug_models:
             self._write_debug_json(
-                self._resolve_debug_path(self.debug_models, output_path),
+                self._resolve_debug_path(self.debug_models),
                 jinja.to_dict(input_model),
             )
         globals_data, filters_data = self._build_template_extras(class_map, input_model)
@@ -254,18 +254,12 @@ class Core(BaseModel):
             f.write(data)
             print(f"output: {dst}")
 
-    def _debug_output_dir(self, output_path: Path) -> Path:
-        """相对调试路径的基准目录（与当次渲染输出根一致）。"""
-        if self.template_path is not None and self.template_path.is_file():
-            return output_path.parent
-        return output_path
-
-    def _resolve_debug_path(self, debug_path: str, output_path: Path) -> Path:
-        """绝对路径原样使用；相对路径相对当次输出根解析。"""
+    def _resolve_debug_path(self, debug_path: str) -> Path:
+        """绝对路径原样使用；相对路径相对进程当前工作目录解析。"""
         path = Path(debug_path)
         if path.is_absolute():
             return path
-        return self._debug_output_dir(output_path) / path
+        return Path.cwd() / path
 
     def _write_debug_json(self, path: Path, data: object) -> None:
         """把调试数据写成 JSON 文件。"""

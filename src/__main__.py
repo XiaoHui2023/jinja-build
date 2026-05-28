@@ -24,13 +24,13 @@ def get_args() -> argparse.Namespace:
         "--debug-input",
         type=str,
         metavar="PATH",
-        help="将配置文件解析结果（尚未实例化 models）写出为 PATH；相对路径相对当次 -o 输出根",
+        help="将配置文件解析结果（尚未实例化 models）写出为 PATH；相对路径相对当前工作目录",
     )
     parser.add_argument(
         "--debug-models",
         type=str,
         metavar="PATH",
-        help="将 models 实例化后的模板数据（渲染前）写出为 PATH；相对路径相对当次 -o 输出根",
+        help="将 models 实例化后的模板数据（渲染前）写出为 PATH；相对路径相对当前工作目录",
     )
     parser.add_argument(
         "--theme",

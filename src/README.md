@@ -117,5 +117,5 @@ YAML 支持 `!include` 引用同目录或其它相对路径文件；同一 mappi
 
 | 参数 | 说明 | 默认 |
 | --- | --- | --- |
-| `--debug-input` `PATH` | 将配置文件经 `load_config` 解析后的 dict 写出为 `PATH`（尚未进入 `models.py`）。`PATH` 为绝对路径时原样使用；为相对路径时相对当次 `-o` 输出根；批处理时相对各输入的 `output/<stem>/`。 | 无 |
+| `--debug-input` `PATH` | 将配置文件经 `load_config` 解析后的 dict 写出为 `PATH`（尚未进入 `models.py`）。`PATH` 为绝对路径时原样使用；为相对路径时相对**当前工作目录**（执行命令时的路径）。 | 无 |
 | `--debug-models` `PATH` | 将 `models` 实例化后、渲染模板前经 `to_dict` 整理的数据写出为 `PATH`（含 `@property` 等模板可见字段）。路径规则同 `--debug-input`。 | 无 |
