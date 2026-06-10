@@ -9,6 +9,10 @@ description: >-
 
 （最新在上。规则见 `~/.cursor/skills/agent-project-changelog/SKILL.md`。）
 
+## 2026-06-10
+
+- **决议**：`@property` 与 models 实例方法在渲染期求值失败时 **必须报错**；`read_property_value` 不再吞异常；`print_render_user_error` 展示模板行与用户 `models.py` 行。
+
 ## 2026-05-27
 
 - **决议**：输入配置支持 `#<文件名>` 单文件捆绑（`src/_utils/_config_bundle.py`）；`!include` 与 `${}` 由 **configlib 0.1.3** 提供；示范 `examples/07-multifile-config`。

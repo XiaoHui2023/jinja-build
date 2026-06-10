@@ -9,7 +9,7 @@ from ._dynamic_loading import load_module
 from ._jinja_convert import to_dict
 from ._jinja_env import SafeDictEnvironment, get_env, resolve_template_name
 from ._cli_user_error import raise_after_report
-from ._jinja_errors import print_template_error
+from ._jinja_errors import print_render_user_error, print_template_error
 from ._jinja_view import build_render_context
 
 
@@ -47,9 +47,18 @@ def render(
         raise_after_report(exc)
 
     try:
-        return template.render(build_render_context(data))
+        context = build_render_context(data)
+    except Exception as exc:
+        print_render_user_error(exc, entry_path=src_path)
+        raise_after_report(exc)
+
+    try:
+        return template.render(context)
     except TemplateError as exc:
         print_template_error(exc, entry_path=src_path)
+        raise_after_report(exc)
+    except Exception as exc:
+        print_render_user_error(exc, entry_path=src_path)
         raise_after_report(exc)
 
 

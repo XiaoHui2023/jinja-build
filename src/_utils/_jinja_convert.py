@@ -5,6 +5,14 @@ from typing import Any
 from pydantic import BaseModel
 
 
+def read_property_value(data: object, name: str) -> object:
+    """读取 property 值；失败时带上类型与属性名再抛出。"""
+    try:
+        return getattr(data, name)
+    except Exception as exc:
+        raise RuntimeError(f"{type(data).__qualname__}.{name} 求值失败: {exc}") from exc
+
+
 def _property_values(data: object) -> dict[str, object]:
     """读取实例上由 property 提供的字段。"""
     values: dict[str, object] = {}
@@ -14,10 +22,7 @@ def _property_values(data: object) -> dict[str, object]:
         descriptor = getattr(type(data), name, None)
         if not isinstance(descriptor, property):
             continue
-        try:
-            values[name] = getattr(data, name)
-        except Exception:
-            continue
+        values[name] = read_property_value(data, name)
     return values
 
 
@@ -50,10 +55,14 @@ def to_dict(data: Any) -> Any:
     for attr_name in dir(data):
         if attr_name.startswith("_"):
             continue
-        try:
-            attr_value = getattr(data, attr_name)
-        except Exception:
-            continue
+        descriptor = getattr(type(data), attr_name, None)
+        if isinstance(descriptor, property):
+            attr_value = read_property_value(data, attr_name)
+        else:
+            try:
+                attr_value = getattr(data, attr_name)
+            except Exception:
+                continue
         if callable(attr_value):
             continue
         result[attr_name] = to_dict(attr_value)
@@ -62,5 +71,6 @@ def to_dict(data: Any) -> Any:
 
 
 __all__ = [
+    "read_property_value",
     "to_dict",
 ]

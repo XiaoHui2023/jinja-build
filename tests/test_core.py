@@ -13,6 +13,7 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from _core import Core  # noqa: E402
+from _utils._cli_user_error import AlreadyReportedError  # noqa: E402
 from _utils._dynamic_loading import load_module  # noqa: E402
 
 
@@ -161,6 +162,68 @@ class CoreRenderTests(unittest.TestCase):
                 )
 
             self.assertIn("Duplicate batch output name: same", str(error.exception))
+
+    def test_property_eval_error_aborts_with_report(self) -> None:
+        """property 求值失败应报错中止，而不是变成未定义变量。"""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            template = root / "template"
+            output = root / "output"
+            template.mkdir()
+            (template / "models.py").write_text(
+                "class Data:\n"
+                "    def __init__(self, name=''):\n"
+                "        self.name = name\n"
+                "\n"
+                "    @property\n"
+                "    def bad(self):\n"
+                "        raise ValueError('prop boom')\n",
+                encoding="utf-8",
+            )
+            self._write_json(root / "in.json", {"name": "ada"})
+            (template / "out.txt.j2").write_text("{{ bad }}\n", encoding="utf-8")
+
+            with self.assertRaises(AlreadyReportedError) as ctx:
+                Core(
+                    template=str(template),
+                    input=str(root / "in.json"),
+                    output=str(output),
+                ).run()
+
+            source = ctx.exception.source
+            self.assertIsInstance(source, RuntimeError)
+            self.assertIn("bad 求值失败", str(source))
+            self.assertFalse((output / "out.txt").exists())
+
+    def test_model_method_error_aborts_with_report(self) -> None:
+        """models 方法在模板中失败应报错中止。"""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            template = root / "template"
+            output = root / "output"
+            template.mkdir()
+            (template / "models.py").write_text(
+                "class Data:\n"
+                "    def __init__(self, name=''):\n"
+                "        self.name = name\n"
+                "\n"
+                "    def boom(self):\n"
+                "        raise RuntimeError('method boom')\n",
+                encoding="utf-8",
+            )
+            self._write_json(root / "in.json", {"name": "ada"})
+            (template / "out.txt.j2").write_text("{{ boom() }}\n", encoding="utf-8")
+
+            with self.assertRaises(AlreadyReportedError) as ctx:
+                Core(
+                    template=str(template),
+                    input=str(root / "in.json"),
+                    output=str(output),
+                ).run()
+
+            self.assertIsInstance(ctx.exception.source, RuntimeError)
+            self.assertIn("method boom", str(ctx.exception.source))
+            self.assertFalse((output / "out.txt").exists())
 
     def test_property_and_filters_are_available_in_templates(self) -> None:
         """property 作变量、内置与 models 方法作过滤器。"""

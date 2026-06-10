@@ -14,7 +14,10 @@ if str(SRC) not in sys.path:
 from jinja2.exceptions import UndefinedError  # noqa: E402
 
 from _utils import _filters, _jinja  # noqa: E402
+from _utils._cli_user_error import AlreadyReportedError  # noqa: E402
 from _utils._dynamic_loading import get_definitions_in_order, load_module  # noqa: E402
+from _utils._jinja_convert import to_dict  # noqa: E402
+from _utils._jinja_errors import build_render_user_error_report  # noqa: E402
 from _utils._jinja_view import TemplateView, resolve_attribute, wrap_for_template  # noqa: E402
 
 
@@ -28,7 +31,7 @@ class ToDictTests(unittest.TestCase):
             def label(self) -> str:
                 return self.name.upper()
 
-        data = _jinja.to_dict(M(name="x", score=2))
+        data = to_dict(M(name="x", score=2))
         self.assertEqual(data["name"], "x")
         self.assertEqual(data["score"], 2)
         self.assertEqual(data["label"], "X")
@@ -42,11 +45,24 @@ class ToDictTests(unittest.TestCase):
             def doubled(self) -> str:
                 return self.key * 2
 
-        self.assertEqual(_jinja.to_dict(Row("ab"))["doubled"], "abab")
+        self.assertEqual(to_dict(Row("ab"))["doubled"], "abab")
+
+    def test_property_eval_error_propagates(self) -> None:
+        class M(BaseModel):
+            name: str
+
+            @property
+            def label(self) -> str:
+                raise ValueError("prop boom")
+
+        with self.assertRaises(RuntimeError) as ctx:
+            to_dict(M(name="x"))
+        self.assertIn("M.label 求值失败", str(ctx.exception))
+        self.assertIsInstance(ctx.exception.__cause__, ValueError)
 
     def test_nested_structures(self) -> None:
         payload = {"items": [{"n": 1}, {"n": 2}], "tags": ("a", "b")}
-        self.assertEqual(_jinja.to_dict(payload)["items"][1]["n"], 2)
+        self.assertEqual(to_dict(payload)["items"][1]["n"], 2)
 
 
 class FilterTests(unittest.TestCase):
@@ -193,6 +209,69 @@ class RenderWithTemplateViewTests(unittest.TestCase):
                 self.assertIn("User", str(exc))
                 self.assertIn("city", str(exc))
                 self.assertIn("缺少模板字段", str(exc))
+                return
+            self.fail("expected AlreadyReportedError")
+
+
+class RenderUserErrorReportTests(unittest.TestCase):
+    def test_user_code_site_is_collected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            models_path = Path(tmp) / "models.py"
+            models_path.write_text(
+                "def boom():\n    raise RuntimeError('method boom')\n",
+                encoding="utf-8",
+            )
+            namespace: dict[str, object] = {}
+            code = compile(models_path.read_text(encoding="utf-8"), str(models_path), "exec")
+            exec(code, namespace)
+            try:
+                namespace["boom"]()
+            except RuntimeError as exc:
+                report = build_render_user_error_report(exc)
+                self.assertEqual(report.exc_type, "RuntimeError")
+                self.assertIn("method boom", report.message)
+                self.assertTrue(any(site.path.resolve() == models_path.resolve() for site in report.sites))
+                return
+            self.fail("expected RuntimeError")
+
+
+class RenderUserCodeErrorTests(unittest.TestCase):
+    def test_property_error_during_context_build(self) -> None:
+        class Data(BaseModel):
+            name: str
+
+            @property
+            def bad(self) -> str:
+                raise ValueError("prop boom")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tpl = Path(tmp) / "t.j2"
+            tpl.write_text("{{ bad }}", encoding="utf-8")
+            try:
+                _jinja.render(tpl, Data(name="x"))
+            except AlreadyReportedError as wrapper:
+                source = wrapper.source
+                self.assertIsInstance(source, RuntimeError)
+                self.assertIn("bad 求值失败", str(source))
+                self.assertIsInstance(source.__cause__, ValueError)
+                return
+            self.fail("expected AlreadyReportedError")
+
+    def test_model_method_error_during_render(self) -> None:
+        class Data:
+            def boom(self) -> str:
+                raise RuntimeError("method boom")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tpl = Path(tmp) / "t.j2"
+            tpl.write_text("{{ boom() }}", encoding="utf-8")
+            inst = Data()
+            globals_var = {"boom": inst.boom}
+            try:
+                _jinja.render(tpl, inst, globals_var)
+            except AlreadyReportedError as wrapper:
+                self.assertIsInstance(wrapper.source, RuntimeError)
+                self.assertIn("method boom", str(wrapper.source))
                 return
             self.fail("expected AlreadyReportedError")
 

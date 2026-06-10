@@ -40,6 +40,8 @@ description: >-
 ## 主入口 · property 与模板变量（硬性）
 
 - `to_dict` 在序列化 **Pydantic `BaseModel`、dataclass、普通实例** 时，除字段/属性外须合并 **`@property` 只读值**（`type(obj)` 上 `property` 描述符），**不覆盖**已有同名字段。
+- **property 求值失败**（含构建模板上下文与 `to_dict`）须 **抛出异常并 Rich 报错**，不得静默跳过或落成 `UndefinedError`。
+- 模板渲染期 **models 实例方法 / 嵌套 property** 的 Python 异常同样 **Rich 展示**（模板行 + `models.py` 等用户代码行），经 `AlreadyReportedError` 非零退出。
 - 模板中 **`{{ label }}`** 直接读 property，与字段同级；**不要**把 property 当成过滤器。
 
 ## 主入口 · 原有设计特性（用户向行为摘要）

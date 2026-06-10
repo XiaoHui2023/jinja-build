@@ -6,7 +6,7 @@ from typing import Any
 from jinja2 import StrictUndefined
 from pydantic import BaseModel
 
-from ._jinja_convert import _property_values
+from ._jinja_convert import _property_values, read_property_value
 
 _PRIMITIVE_TYPES = (str, int, float, bool, type(None))
 
@@ -159,10 +159,14 @@ def _context_entries(data: object) -> dict[str, Any]:
     for name in dir(data):
         if name.startswith("_"):
             continue
-        try:
-            value = getattr(data, name)
-        except Exception:
-            continue
+        descriptor = getattr(type(data), name, None)
+        if isinstance(descriptor, property):
+            value = read_property_value(data, name)
+        else:
+            try:
+                value = getattr(data, name)
+            except Exception:
+                continue
         if callable(value):
             continue
         entries[name] = value

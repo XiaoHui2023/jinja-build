@@ -75,12 +75,42 @@ def build_template_error_report(
     )
 
 
-def print_template_error(
+def build_render_user_error_report(
     exc: BaseException,
     entry_path: Path | None = None,
-) -> None:
-    """用 Rich 打印模板错误（仅含模板相关位置）。"""
-    report = build_template_error_report(exc, entry_path=entry_path)
+) -> TemplateErrorReport:
+    """从渲染期用户 Python 异常收集模板位置与 models 等用户代码位置。"""
+    message = _exception_message(exc)
+    extra = list(_cause_messages(exc))
+    sites: list[TemplateErrorSite] = []
+    seen: set[tuple[str, int]] = set()
+    for site in _sites_from_traceback(exc) + _sites_from_user_code_traceback(exc):
+        key = (str(site.path), site.lineno)
+        if key in seen:
+            continue
+        seen.add(key)
+        sites.append(site)
+
+    if not sites and entry_path is not None:
+        sites.append(
+            TemplateErrorSite(
+                path=entry_path.resolve(),
+                lineno=1,
+                location="",
+                line_text="",
+            )
+        )
+
+    return TemplateErrorReport(
+        exc_type=type(exc).__name__,
+        message=message,
+        entry_path=entry_path.resolve() if entry_path else None,
+        sites=tuple(sites),
+        extra=tuple(extra),
+    )
+
+
+def _print_error_report(report: TemplateErrorReport) -> None:
     console = jinja_error_console()
 
     body: list[object] = []
@@ -103,6 +133,24 @@ def print_template_error(
         body_parts=body,
         context=None,
     )
+
+
+def print_template_error(
+    exc: BaseException,
+    entry_path: Path | None = None,
+) -> None:
+    """用 Rich 打印模板错误（仅含模板相关位置）。"""
+    report = build_template_error_report(exc, entry_path=entry_path)
+    _print_error_report(report)
+
+
+def print_render_user_error(
+    exc: BaseException,
+    entry_path: Path | None = None,
+) -> None:
+    """用 Rich 打印渲染期 models 代码或 property 求值错误。"""
+    report = build_render_user_error_report(exc, entry_path=entry_path)
+    _print_error_report(report)
 
 
 def _sites_group(sites: tuple[TemplateErrorSite, ...]) -> Group | None:
@@ -187,6 +235,63 @@ def _sites_from_syntax_error(exc: TemplateSyntaxError) -> list[TemplateErrorSite
     ]
 
 
+_INTERNAL_FRAME_MARKERS = (
+    "/site-packages/jinja2/",
+    "/concurrent/futures/",
+)
+_INTERNAL_FRAME_SUFFIXES = (
+    "/_utils/_jinja.py",
+    "/_utils/_jinja_view.py",
+    "/_utils/_jinja_convert.py",
+    "/_utils/_filters.py",
+    "/_core.py",
+)
+
+
+def _is_user_code_frame(filename: str) -> bool:
+    normalized = filename.replace("\\", "/")
+    if not normalized.endswith(".py"):
+        return False
+    if "/site-packages/" in normalized:
+        return False
+    for marker in _INTERNAL_FRAME_MARKERS:
+        if marker in normalized:
+            return False
+    for suffix in _INTERNAL_FRAME_SUFFIXES:
+        if suffix in normalized:
+            return False
+    return True
+
+
+def _sites_from_user_code_traceback(exc: BaseException) -> list[TemplateErrorSite]:
+    sites: list[TemplateErrorSite] = []
+    seen: set[tuple[str, int, str]] = set()
+    tb: TracebackType | None = exc.__traceback__
+    while tb is not None:
+        frame = tb.tb_frame
+        filename = frame.f_code.co_filename
+        if _is_user_code_frame(filename):
+            path = Path(filename).resolve()
+            key = (str(path), tb.tb_lineno, frame.f_code.co_name)
+            if key not in seen:
+                seen.add(key)
+                line_text = ""
+                for _num, text, is_err in _read_context_lines(path, tb.tb_lineno):
+                    if is_err:
+                        line_text = text
+                        break
+                sites.append(
+                    TemplateErrorSite(
+                        path=path,
+                        lineno=tb.tb_lineno,
+                        location=frame.f_code.co_name,
+                        line_text=line_text,
+                    )
+                )
+        tb = tb.tb_next
+    return sites
+
+
 def _sites_from_traceback(exc: BaseException) -> list[TemplateErrorSite]:
     sites: list[TemplateErrorSite] = []
     seen: set[tuple[str, int, str]] = set()
@@ -266,6 +371,8 @@ def _cause_messages(exc: BaseException) -> list[str]:
 __all__ = [
     "TemplateErrorReport",
     "TemplateErrorSite",
+    "build_render_user_error_report",
     "build_template_error_report",
+    "print_render_user_error",
     "print_template_error",
 ]
