@@ -54,7 +54,7 @@ def build_template_error_report(
         if exc.templates:
             extra.insert(1, "已尝试: " + ", ".join(str(name) for name in exc.templates))
     else:
-        sites.extend(_sites_from_traceback(exc))
+        sites.extend(_innermost_template_sites(_sites_from_traceback(exc)))
 
     if not sites and entry_path is not None:
         sites.append(
@@ -82,24 +82,22 @@ def build_render_user_error_report(
     """从渲染期用户 Python 异常收集模板位置与 models 等用户代码位置。"""
     message = _exception_message(exc)
     extra = list(_cause_messages(exc))
-    sites: list[TemplateErrorSite] = []
-    seen: set[tuple[str, int]] = set()
-    for site in _sites_from_traceback(exc) + _sites_from_user_code_traceback(exc):
+    user_sites = _collect_user_sites(exc)
+    template_sites = _innermost_template_sites(_sites_from_traceback(exc))
+    sites = list(user_sites)
+    seen = {(str(site.path), site.lineno) for site in sites}
+    for site in template_sites:
         key = (str(site.path), site.lineno)
         if key in seen:
             continue
         seen.add(key)
         sites.append(site)
 
-    if not sites and entry_path is not None:
-        sites.append(
-            TemplateErrorSite(
-                path=entry_path.resolve(),
-                lineno=1,
-                location="",
-                line_text="",
-            )
-        )
+    if entry_path is not None and not template_sites:
+        entry_site = _entry_template_site(entry_path)
+        key = (str(entry_site.path), entry_site.lineno)
+        if key not in seen:
+            sites.append(entry_site)
 
     return TemplateErrorReport(
         exc_type=type(exc).__name__,
@@ -159,18 +157,26 @@ def _sites_group(sites: tuple[TemplateErrorSite, ...]) -> Group | None:
     parts: list[Text | Rule | Group] = []
     for index, site in enumerate(sites):
         if index > 0:
-            parts.append(Text("↑ 由下列位置调用", style="error.dim"))
+            parts.append(Rule(style="error.dim"))
         block = _site_context_group(site)
         if block is not None:
             parts.append(block)
     return Group(*parts) if parts else None
 
 
-def _site_context_group(site: TemplateErrorSite) -> Group | None:
+def _site_header(site: TemplateErrorSite) -> Text:
     header = Text()
     header.append(str(site.path), style="error.path")
-    if site.location:
-        header.append(f"  ({site.location})", style="error.dim")
+    if site.lineno >= 1:
+        header.append(f":{site.lineno}", style="error.line_no")
+    location = _format_site_location(site.location)
+    if location:
+        header.append(f"  ({location})", style="error.dim")
+    return header
+
+
+def _site_context_group(site: TemplateErrorSite) -> Group | None:
+    header = _site_header(site)
 
     if site.lineno < 1:
         return Group(header)
@@ -236,31 +242,102 @@ def _sites_from_syntax_error(exc: TemplateSyntaxError) -> list[TemplateErrorSite
 
 
 _INTERNAL_FRAME_MARKERS = (
-    "/site-packages/jinja2/",
+    "/site-packages/",
     "/concurrent/futures/",
+    "/Lib/importlib/",
 )
 _INTERNAL_FRAME_SUFFIXES = (
     "/_utils/_jinja.py",
     "/_utils/_jinja_view.py",
     "/_utils/_jinja_convert.py",
+    "/_utils/_jinja_env.py",
+    "/_utils/_jinja_errors.py",
+    "/_utils/_jinja_rich.py",
+    "/_utils/_dynamic_loading.py",
     "/_utils/_filters.py",
+    "/_utils/_cli_user_error.py",
+    "/_utils/_input_errors.py",
+    "/_utils/_error_card.py",
+    "/_utils/_config_bundle.py",
     "/_core.py",
 )
 
 
-def _is_user_code_frame(filename: str) -> bool:
+def _is_internal_python_frame(filename: str) -> bool:
     normalized = filename.replace("\\", "/")
     if not normalized.endswith(".py"):
-        return False
-    if "/site-packages/" in normalized:
-        return False
+        return True
     for marker in _INTERNAL_FRAME_MARKERS:
         if marker in normalized:
-            return False
+            return True
     for suffix in _INTERNAL_FRAME_SUFFIXES:
         if suffix in normalized:
-            return False
-    return True
+            return True
+    if "/_MEI" in normalized and "/_utils/" in normalized:
+        return True
+    return False
+
+
+def _is_user_code_frame(filename: str) -> bool:
+    return not _is_internal_python_frame(filename)
+
+
+def _exception_cause_chain(exc: BaseException) -> list[BaseException]:
+    chain: list[BaseException] = []
+    seen: set[int] = set()
+    current: BaseException | None = exc
+    while current is not None and id(current) not in seen:
+        seen.add(id(current))
+        chain.append(current)
+        current = current.__cause__
+    return chain
+
+
+def _collect_user_sites(exc: BaseException) -> list[TemplateErrorSite]:
+    sites: list[TemplateErrorSite] = []
+    seen: set[tuple[str, int]] = set()
+    for linked in _exception_cause_chain(exc):
+        for site in _sites_from_user_code_traceback(linked):
+            key = (str(site.path), site.lineno)
+            if key in seen:
+                continue
+            seen.add(key)
+            sites.append(site)
+    return sites
+
+
+def _entry_template_site(entry_path: Path) -> TemplateErrorSite:
+    path = entry_path.resolve()
+    lineno = 1
+    line_text = ""
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+        if lines:
+            line_text = lines[0]
+    except OSError:
+        pass
+    return TemplateErrorSite(
+        path=path,
+        lineno=lineno,
+        location="模板",
+        line_text=line_text,
+    )
+
+
+def _innermost_template_sites(sites: list[TemplateErrorSite]) -> list[TemplateErrorSite]:
+    if len(sites) <= 1:
+        return sites
+    return [sites[-1]]
+
+
+def _format_site_location(location: str) -> str:
+    if not location:
+        return ""
+    if "template code" in location:
+        return "模板"
+    if location == "template":
+        return "模板"
+    return location
 
 
 def _sites_from_user_code_traceback(exc: BaseException) -> list[TemplateErrorSite]:
@@ -354,17 +431,18 @@ def _exception_message(exc: BaseException) -> str:
 
 
 def _cause_messages(exc: BaseException) -> list[str]:
+    headline = _exception_message(exc)
     messages: list[str] = []
-    current = exc.__cause__ or exc.__context__
-    while current is not None and current is not exc:
+    for current in _exception_cause_chain(exc)[1:]:
         if isinstance(current, TemplateError):
-            current = current.__cause__ or current.__context__
             continue
         text = str(current).strip()
+        if not text:
+            continue
         label = f"{type(current).__name__}: {text}"
-        if text and label not in messages:
-            messages.append(label)
-        current = current.__cause__ or current.__context__
+        if label in messages or text in headline:
+            continue
+        messages.append(label)
     return messages
 
 

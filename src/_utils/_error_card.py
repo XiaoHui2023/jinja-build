@@ -53,7 +53,12 @@ def file_context_group(path: Path, lineno: int) -> Group | None:
     if not lines or lineno < 1:
         return None
 
-    parts: list[Text | Rule] = [Text(str(path), style="error.path")]
+    parts: list[Text | Rule] = [
+        Text.assemble(
+            (str(path), "error.path"),
+            (f":{lineno}", "error.line_no"),
+        )
+    ]
     start = max(1, lineno - _CONTEXT_MARGIN)
     end = min(len(lines), lineno + _CONTEXT_MARGIN)
     for num in range(start, end + 1):

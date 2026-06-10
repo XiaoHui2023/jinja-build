@@ -214,6 +214,39 @@ class RenderWithTemplateViewTests(unittest.TestCase):
 
 
 class RenderUserErrorReportTests(unittest.TestCase):
+    def test_property_error_collects_models_site_from_cause(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            models_path = Path(tmp) / "models.py"
+            models_path.write_text(
+                "class Data:\n"
+                "    def __init__(self, name=''):\n"
+                "        self.name = name\n"
+                "\n"
+                "    @property\n"
+                "    def bad(self):\n"
+                "        raise ValueError('prop boom')\n",
+                encoding="utf-8",
+            )
+            namespace: dict[str, object] = {}
+            code = compile(models_path.read_text(encoding="utf-8"), str(models_path), "exec")
+            exec(code, namespace)
+            inst = namespace["Data"](name="x")
+            from _utils._jinja_convert import read_property_value  # noqa: E402
+
+            try:
+                read_property_value(inst, "bad")
+            except RuntimeError as exc:
+                report = build_render_user_error_report(exc)
+                self.assertIn("prop boom", report.message)
+                model_sites = [
+                    site for site in report.sites if site.path.resolve() == models_path.resolve()
+                ]
+                self.assertEqual(len(model_sites), 1)
+                self.assertGreaterEqual(model_sites[0].lineno, 6)
+                self.assertIn("prop boom", model_sites[0].line_text)
+                return
+            self.fail("expected RuntimeError")
+
     def test_user_code_site_is_collected(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             models_path = Path(tmp) / "models.py"
@@ -230,7 +263,11 @@ class RenderUserErrorReportTests(unittest.TestCase):
                 report = build_render_user_error_report(exc)
                 self.assertEqual(report.exc_type, "RuntimeError")
                 self.assertIn("method boom", report.message)
-                self.assertTrue(any(site.path.resolve() == models_path.resolve() for site in report.sites))
+                model_sites = [
+                    site for site in report.sites if site.path.resolve() == models_path.resolve()
+                ]
+                self.assertEqual(len(model_sites), 1)
+                self.assertEqual(model_sites[0].lineno, 2)
                 return
             self.fail("expected RuntimeError")
 
