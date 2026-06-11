@@ -1,14 +1,17 @@
 @echo off
 setlocal EnableExtensions
-rem 统一打包：使用仓库根 .venv，PyInstaller onefile（Windows 无 staticx）。
-rem 用法（仓库根）：tools\pack.bat [src]
+rem Unified packaging: use repo .venv and build PyInstaller onefile on Windows.
+rem Usage from repo root: tools\pack.bat [src]
+rem Products: dist\jinja-build.exe and dist\jinja-build-<version>-windows.zip.
+rem The script creates or reuses .venv, force-reinstalls the project and PyInstaller.
+rem Spec: jinja-build-cli.spec builds the jinja-build.exe binary.
 cd /d "%~dp0\.."
 
 set "TARGET=%~1"
 if "%TARGET%"=="" set "TARGET=src"
 
 if not exist ".venv\Scripts\python.exe" (
-    echo 未找到 .venv，正在创建 ...
+    echo 未找到 .venv，正在创建...
     py -3 -m venv .venv 2>nul || python -m venv .venv
     if errorlevel 1 (
         echo 错误: 无法创建 .venv，请确认已安装 Python。
@@ -27,13 +30,13 @@ echo ==^> 使用虚拟环境: %PY%
 
 "%PY%" -m pip install -q -U pip setuptools wheel
 if errorlevel 1 exit /b 1
-"%PY%" -m pip install -q -e .
+"%PY%" -m pip install -q --upgrade --force-reinstall -e .
 if errorlevel 1 exit /b 1
-"%PY%" -m pip install -q "pyinstaller>=6.0"
+"%PY%" -m pip install -q --upgrade --force-reinstall "pyinstaller>=6.0"
 if errorlevel 1 exit /b 1
 
 if /I not "%TARGET%"=="src" (
-    echo 用法: tools\pack.bat [src] >&2
+    echo Usage: tools\pack.bat [src] >&2
     exit /b 1
 )
 
@@ -51,11 +54,15 @@ echo ==^> PyInstaller: %SPEC%
 if errorlevel 1 exit /b 1
 
 if exist "%CD%\dist\jinja-build.exe" (
-    echo 完成: %CD%\dist\jinja-build.exe（Windows：无 staticx 步骤）
+    echo 完成: %CD%\dist\jinja-build.exe (Windows, no staticx)
 ) else (
-    echo 错误: 未在 dist 找到 jinja-build.exe。 >&2
+    echo 错误: 未在 dist 找到 jinja-build.exe。>&2
     exit /b 1
 )
 
-echo PyInstaller 输出目录: %CD%\dist
+echo ==^> Assemble release archive
+"%PY%" tools\bundle_release.py
+if errorlevel 1 exit /b 1
+
+echo PyInstaller output directory: %CD%\dist
 exit /b 0

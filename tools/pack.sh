@@ -1,9 +1,18 @@
 #!/usr/bin/env bash
-# 统一打包：使用仓库根 .venv，先 PyInstaller（主入口 spec），Linux 再 staticx 得到自解压静态包。
-# Windows 仅 PyInstaller（无 staticx）。
-#
-# 用法（仓库根）：./tools/pack.sh [src]（Windows 批处理见 tools/pack.bat）
-# Linux 另需系统包 patchelf（如 apt install patchelf）。
+# Unified packaging: use repo .venv, build PyInstaller onefile, then apply staticx on Linux.
+# Usage from repo root:
+#   ./tools/pack.sh [src]
+#   bash tools/pack.sh [src]
+# Products:
+#   dist/jinja-build on Linux/macOS/Git Bash, plus dist/jinja-build-<version>-<platform>.tar.gz.
+#   On Linux, dist/jinja-build is replaced by the staticx self-extracting binary.
+# Dependencies:
+#   The script creates or reuses .venv, force-reinstalls the project and PyInstaller.
+#   Linux staticx requires system patchelf, for example: sudo apt install patchelf.
+# Spec:
+#   jinja-build-cli.spec builds the jinja-build binary.
+# Compatibility:
+#   Onefile ABI follows the build machine; build on the target baseline and test the binary there.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -17,7 +26,7 @@ ensure_venv() {
   elif [[ -f "$ROOT/.venv/bin/python" ]]; then
     PYTHON_CMD=("$ROOT/.venv/bin/python")
   else
-    echo "未找到 .venv，正在创建 ..."
+    echo "未找到 .venv，正在创建..."
     case "$(uname -s 2>/dev/null || true)" in
       MINGW*|MSYS*|CYGWIN*|Windows_NT)
         if command -v py >/dev/null 2>&1; then
@@ -47,10 +56,10 @@ apply_staticx_linux() {
     return 0
   fi
   if ! command -v patchelf >/dev/null 2>&1; then
-    echo "错误: Linux 下 staticx 需要系统命令 patchelf（例如: sudo apt install patchelf）。" >&2
+    echo "错误: Linux staticx 需要系统命令 patchelf，例如 sudo apt install patchelf。" >&2
     exit 1
   fi
-  "${PYTHON_CMD[@]}" -m pip install -q staticx
+  "${PYTHON_CMD[@]}" -m pip install -q --upgrade --force-reinstall staticx
   local staticx="$ROOT/.venv/bin/staticx"
   if [[ ! -x "$staticx" ]]; then
     echo "错误: 未找到可执行的 .venv/bin/staticx。" >&2
@@ -62,7 +71,7 @@ apply_staticx_linux() {
   "$staticx" "$pyi_out" "$tmp_out"
   mv -f "$tmp_out" "$pyi_out"
   chmod +x "$pyi_out"
-  echo "完成: $pyi_out（staticx 自解压包；请在目标机实测）"
+  echo "完成: $pyi_out (staticx self-extracting binary; test on target machines)"
 }
 
 build_cli() {
@@ -75,7 +84,7 @@ build_cli() {
   "${PYTHON_CMD[@]}" -m PyInstaller --clean --noconfirm "$spec"
   local dist_name="jinja-build"
   if [[ -f "$ROOT/dist/${dist_name}.exe" ]]; then
-    echo "完成: $ROOT/dist/${dist_name}.exe（Windows：无 staticx 步骤）"
+    echo "完成: $ROOT/dist/${dist_name}.exe (Windows, no staticx)"
     return 0
   fi
   if [[ ! -f "$ROOT/dist/${dist_name}" ]]; then
@@ -84,26 +93,28 @@ build_cli() {
   fi
   case "$(uname -s 2>/dev/null || true)" in
     Linux) apply_staticx_linux "$dist_name" ;;
-    *) echo "完成: $ROOT/dist/${dist_name}（非 Linux，跳过 staticx）" ;;
+    *) echo "完成: $ROOT/dist/${dist_name} (non-Linux, skip staticx)" ;;
   esac
 }
 
 ensure_venv
 
 "${PYTHON_CMD[@]}" -m pip install -q -U pip setuptools wheel
-"${PYTHON_CMD[@]}" -m pip install -q -e .
-"${PYTHON_CMD[@]}" -m pip install -q "pyinstaller>=6.0"
+"${PYTHON_CMD[@]}" -m pip install -q --upgrade --force-reinstall -e .
+"${PYTHON_CMD[@]}" -m pip install -q --upgrade --force-reinstall "pyinstaller>=6.0"
 
 rm -rf "$ROOT/build" "$ROOT/dist"
 
 case "$TARGET" in
   src|"")
     build_cli
+    echo "==> Assemble release archive"
+    "${PYTHON_CMD[@]}" "$ROOT/tools/bundle_release.py"
     ;;
   *)
-    echo "用法: ./tools/pack.sh [src]" >&2
+    echo "Usage: ./tools/pack.sh [src]" >&2
     exit 1
     ;;
 esac
 
-echo "PyInstaller 输出目录: $ROOT/dist"
+echo "PyInstaller output directory: $ROOT/dist"
