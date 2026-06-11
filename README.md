@@ -31,7 +31,7 @@ class Models:
 
 ### report.txt.j2
 
-```jinja2
+```jinja
 {{ upper_title }}
 
 {% for data in datas %}
@@ -87,8 +87,6 @@ gamma
 
 ### 单个输入
 
-`-i` 与 `-b` 互斥。省略 `-i` 时用空配置实例化 `models.py` 的最后一个顶层类。`-o` 为渲染结果的写出路径，可以是文件或目录。
-
 ```makefile
 TOOL       := /path/to/tool                 # 可执行文件或脚本
 TEMPLATE   := /path/to/templates/chip       # 模板族目录
@@ -108,7 +106,7 @@ render:
 
 ### 批量输入
 
-多份输入配置文件共用同一套模板。`-o` 为输出根目录；每份输入在其下各占以配置文件名（不含扩展名）命名的子目录。
+多份输入配置文件共用同一套模板。
 
 ```makefile
 TOOL       := /path/to/tool                 # 可执行文件或脚本
