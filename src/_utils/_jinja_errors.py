@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from types import TracebackType
@@ -93,7 +94,7 @@ def build_render_user_error_report(
         seen.add(key)
         sites.append(site)
 
-    if entry_path is not None and not template_sites:
+    if entry_path is not None and not template_sites and not user_sites:
         entry_site = _entry_template_site(entry_path)
         key = (str(entry_site.path), entry_site.lineno)
         if key not in seen:
@@ -108,11 +109,18 @@ def build_render_user_error_report(
     )
 
 
+def _entry_path_in_sites(report: TemplateErrorReport) -> bool:
+    if report.entry_path is None:
+        return False
+    entry = report.entry_path.resolve()
+    return any(site.path.resolve() == entry for site in report.sites)
+
+
 def _print_error_report(report: TemplateErrorReport) -> None:
     console = jinja_error_console()
 
     body: list[object] = []
-    if report.entry_path is not None:
+    if report.entry_path is not None and not _entry_path_in_sites(report):
         body.append(
             meta_grid([("入口模板", str(report.entry_path), "error.path")]),
         )
@@ -246,34 +254,35 @@ _INTERNAL_FRAME_MARKERS = (
     "/concurrent/futures/",
     "/Lib/importlib/",
 )
-_INTERNAL_FRAME_SUFFIXES = (
-    "/_utils/_jinja.py",
-    "/_utils/_jinja_view.py",
-    "/_utils/_jinja_convert.py",
-    "/_utils/_jinja_env.py",
-    "/_utils/_jinja_errors.py",
-    "/_utils/_jinja_rich.py",
-    "/_utils/_dynamic_loading.py",
-    "/_utils/_filters.py",
-    "/_utils/_cli_user_error.py",
-    "/_utils/_input_errors.py",
-    "/_utils/_error_card.py",
-    "/_utils/_config_bundle.py",
-    "/_core.py",
-)
+
+
+def _meipass_prefix() -> str | None:
+    base = getattr(sys, "_MEIPASS", None)
+    if not base:
+        return None
+    return str(Path(base).resolve()).replace("\\", "/")
 
 
 def _is_internal_python_frame(filename: str) -> bool:
     normalized = filename.replace("\\", "/")
     if not normalized.endswith(".py"):
         return True
+    meipass = _meipass_prefix()
+    if meipass is not None:
+        try:
+            resolved = str(Path(filename).resolve()).replace("\\", "/")
+        except OSError:
+            resolved = normalized
+        if resolved == meipass or resolved.startswith(f"{meipass}/"):
+            return True
     for marker in _INTERNAL_FRAME_MARKERS:
         if marker in normalized:
             return True
-    for suffix in _INTERNAL_FRAME_SUFFIXES:
-        if suffix in normalized:
-            return True
-    if "/_MEI" in normalized and "/_utils/" in normalized:
+    if "/_utils/" in normalized or normalized.endswith("/_utils"):
+        return True
+    if normalized.endswith("/_core.py"):
+        return True
+    if normalized.endswith("/__main__.py") and "/src/" in normalized:
         return True
     return False
 
@@ -297,12 +306,14 @@ def _collect_user_sites(exc: BaseException) -> list[TemplateErrorSite]:
     sites: list[TemplateErrorSite] = []
     seen: set[tuple[str, int]] = set()
     for linked in _exception_cause_chain(exc):
-        for site in _sites_from_user_code_traceback(linked):
-            key = (str(site.path), site.lineno)
-            if key in seen:
-                continue
-            seen.add(key)
-            sites.append(site)
+        site = _innermost_user_site_from_traceback(linked)
+        if site is None:
+            continue
+        key = (str(site.path), site.lineno)
+        if key in seen:
+            continue
+        seen.add(key)
+        sites.append(site)
     return sites
 
 
@@ -340,33 +351,27 @@ def _format_site_location(location: str) -> str:
     return location
 
 
-def _sites_from_user_code_traceback(exc: BaseException) -> list[TemplateErrorSite]:
-    sites: list[TemplateErrorSite] = []
-    seen: set[tuple[str, int, str]] = set()
+def _innermost_user_site_from_traceback(exc: BaseException) -> TemplateErrorSite | None:
+    found: TemplateErrorSite | None = None
     tb: TracebackType | None = exc.__traceback__
     while tb is not None:
         frame = tb.tb_frame
         filename = frame.f_code.co_filename
         if _is_user_code_frame(filename):
             path = Path(filename).resolve()
-            key = (str(path), tb.tb_lineno, frame.f_code.co_name)
-            if key not in seen:
-                seen.add(key)
-                line_text = ""
-                for _num, text, is_err in _read_context_lines(path, tb.tb_lineno):
-                    if is_err:
-                        line_text = text
-                        break
-                sites.append(
-                    TemplateErrorSite(
-                        path=path,
-                        lineno=tb.tb_lineno,
-                        location=frame.f_code.co_name,
-                        line_text=line_text,
-                    )
-                )
+            line_text = ""
+            for _num, text, is_err in _read_context_lines(path, tb.tb_lineno):
+                if is_err:
+                    line_text = text
+                    break
+            found = TemplateErrorSite(
+                path=path,
+                lineno=tb.tb_lineno,
+                location=frame.f_code.co_name,
+                line_text=line_text,
+            )
         tb = tb.tb_next
-    return sites
+    return found
 
 
 def _sites_from_traceback(exc: BaseException) -> list[TemplateErrorSite]:
