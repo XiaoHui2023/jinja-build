@@ -15,6 +15,7 @@ RELEASE_PATHS = (
     "README.md",
     "config.md",
     "model.md",
+    "images",
 )
 
 
