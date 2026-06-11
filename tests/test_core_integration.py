@@ -43,20 +43,18 @@ class CoreValidationTests(unittest.TestCase):
             self.assertIn("Not found class", str(ctx.exception))
 
 
-class SingleTemplateFileTests(unittest.TestCase):
-    def test_single_j2_file_writes_to_output_path(self) -> None:
+class TemplateDirectoryTests(unittest.TestCase):
+    def test_template_must_be_directory(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             tpl = root / "only.j2"
-            out = root / "result.txt"
             tpl.write_text("v={{ name }}\n", encoding="utf-8")
             (root / "models.py").write_text(
                 "class Data:\n    def __init__(self, name=''):\n        self.name = name\n",
                 encoding="utf-8",
             )
-            (root / "in.json").write_text('{"name": "solo"}', encoding="utf-8")
-            Core(template=str(tpl), input=str(root / "in.json"), output=str(out)).run()
-            self.assertEqual(out.read_text(encoding="utf-8").rstrip("\n"), "v=solo")
+            with self.assertRaises(NotADirectoryError):
+                Core(template=str(tpl), output=str(root / "out"))
 
 
 class ConfigAndModelsTests(unittest.TestCase):

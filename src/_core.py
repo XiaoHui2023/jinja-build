@@ -18,7 +18,7 @@ from _utils._input_errors import print_input_model_error
 class Core(BaseModel):
     """把配置数据套进模板目录，生成一组输出文件。"""
 
-    template: str = Field(description="模板目录或单个模板文件。")
+    template: str = Field(description="模板目录。")
     input: str | None = Field(default=None, description="输入配置文件，省略时按空配置处理。")
     batch: list[str] | None = Field(default=None, description="多个输入配置文件，共用同一套模板。")
     output: str = Field(description="输出文件或目录。")
@@ -46,9 +46,12 @@ class Core(BaseModel):
         if self.batch:
             self._check_batch_names(self.batch)
         self.template_path = Path(self.template)
+        if not self.template_path.exists():
+            raise FileNotFoundError(self.template_path)
+        if not self.template_path.is_dir():
+            raise NotADirectoryError(self.template_path)
 
-        models_root = self.template_path if self.template_path.is_dir() else self.template_path.parent
-        self.models_path = models_root / self.models_filename
+        self.models_path = self.template_path / self.models_filename
         if not self.models_path.exists():
             raise FileNotFoundError(self.models_path)
 
@@ -65,9 +68,7 @@ class Core(BaseModel):
         if self.template_path is None:
             raise RuntimeError("template path is not ready")
 
-        if self.template_path.is_dir():
-            return list(self.template_path.rglob("*.j2")), [self.template_path]
-        return [self.template_path], []
+        return list(self.template_path.rglob("*.j2")), [self.template_path]
 
     def _load_models(self) -> list[type]:
         """读取数据结构文件。"""
@@ -221,9 +222,7 @@ class Core(BaseModel):
         """计算单个模板对应的输出路径。"""
         if self.template_path is None:
             raise RuntimeError("template path is not ready")
-        if self.template_path.is_dir():
-            return str(output_root / path_j2.relative_to(self.template_path).with_suffix(""))
-        return str(output_root)
+        return str(output_root / path_j2.relative_to(self.template_path).with_suffix(""))
 
     def _render_one(
         self,

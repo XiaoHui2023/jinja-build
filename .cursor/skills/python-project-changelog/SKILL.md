@@ -9,6 +9,10 @@ description: >-
 
 （最新在上。规则见 `~/.cursor/skills/agent-project-changelog/SKILL.md`。）
 
+## 2026-06-11
+
+- **决议**：`-t` / `--template` 仅接受模板目录；传入单个 `.j2` 文件时 `NotADirectoryError`。
+
 ## 2026-06-10
 
 - **决议**：`@property` 与 models 实例方法在渲染期求值失败时 **必须报错**；`read_property_value` 不再吞异常；`print_render_user_error` 展示模板行与用户 `models.py` 行。
