@@ -11,6 +11,7 @@ description: >-
 
 ## 2026-06-11
 
+- **决议**：根目录用户向 **README.md** / **config.md** / **model.md** 分工：README 演示全流程与 CLI，专档写配置语法与 **models.py** 写法。
 - **决议**：`-t` / `--template` 仅接受模板目录；传入单个 `.j2` 文件时 `NotADirectoryError`。
 
 ## 2026-06-10

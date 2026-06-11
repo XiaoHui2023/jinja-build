@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="620px" height="120px" viewBox="0 0 620 120" content="&lt;mxfile host=&quot;app.diagrams.net&quot; agent=&quot;wrap_drawio_svg&quot; version=&quot;24.0.0&quot;&gt;
+  &lt;diagram id=&quot;pipeline&quot; name=&quot;pipeline&quot;&gt;
+  &lt;mxGraphModel dx=&quot;900&quot; dy=&quot;600&quot; grid=&quot;1&quot; gridSize=&quot;10&quot; guides=&quot;1&quot; tooltips=&quot;1&quot; connect=&quot;1&quot; arrows=&quot;1&quot; fold=&quot;1&quot; page=&quot;1&quot; pageScale=&quot;1&quot; pageWidth=&quot;620&quot; pageHeight=&quot;120&quot; math=&quot;0&quot; shadow=&quot;0&quot; background=&quot;none&quot;&gt;
+    &lt;root&gt;
+      &lt;mxCell id=&quot;0&quot;/&gt;
+      &lt;mxCell id=&quot;1&quot; parent=&quot;0&quot;/&gt;
+      &lt;mxCell id=&quot;file1&quot; value=&quot;&amp;lt;b&amp;gt;输入配置&amp;lt;/b&amp;gt;&amp;lt;br&amp;gt;&amp;lt;font style=&amp;quot;font-size: 11px; font-family: Consolas;&amp;quot;&amp;gt;config.yaml&amp;lt;/font&amp;gt;&quot; style=&quot;shape=document;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;fillColor=#f6f8fa;strokeColor=#57606a;size=0.18;fontColor=#24292f;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+        &lt;mxGeometry x=&quot;30&quot; y=&quot;20&quot; width=&quot;140&quot; height=&quot;80&quot; as=&quot;geometry&quot;/&gt;
+      &lt;/mxCell&gt;
+      &lt;mxCell id=&quot;file2&quot; value=&quot;&amp;lt;b&amp;gt;数据结构&amp;lt;/b&amp;gt;&amp;lt;br&amp;gt;&amp;lt;font style=&amp;quot;font-size: 11px; font-family: Consolas;&amp;quot;&amp;gt;models.py&amp;lt;/font&amp;gt;&quot; style=&quot;shape=document;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;fillColor=#fff8e6;strokeColor=#bf8700;size=0.18;fontColor=#24292f;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+        &lt;mxGeometry x=&quot;240&quot; y=&quot;20&quot; width=&quot;140&quot; height=&quot;80&quot; as=&quot;geometry&quot;/&gt;
+      &lt;/mxCell&gt;
+      &lt;mxCell id=&quot;file3&quot; value=&quot;&amp;lt;b&amp;gt;渲染模板&amp;lt;/b&amp;gt;&amp;lt;br&amp;gt;&amp;lt;font style=&amp;quot;font-size: 11px; font-family: Consolas;&amp;quot;&amp;gt;report.j2&amp;lt;/font&amp;gt;&quot; style=&quot;shape=document;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;fillColor=#eef6ff;strokeColor=#0969da;size=0.18;fontColor=#24292f;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+        &lt;mxGeometry x=&quot;450&quot; y=&quot;20&quot; width=&quot;140&quot; height=&quot;80&quot; as=&quot;geometry&quot;/&gt;
+      &lt;/mxCell&gt;
+      &lt;mxCell id=&quot;edge1&quot; style=&quot;edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#57606a;endArrow=classic;endFill=1;&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;file1&quot; target=&quot;file2&quot;&gt;
+        &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot;/&gt;
+      &lt;/mxCell&gt;
+      &lt;mxCell id=&quot;edge2&quot; style=&quot;edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#57606a;endArrow=classic;endFill=1;&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;file2&quot; target=&quot;file3&quot;&gt;
+        &lt;mxGeometry relative=&quot;1&quot; as=&quot;geometry&quot;/&gt;
+      &lt;/mxCell&gt;
+    &lt;/root&gt;
+  &lt;/mxGraphModel&gt;
+&lt;/diagram&gt;
+&lt;/mxfile&gt;
+" style="background-color: transparent; background-color: transparent;">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M0,0 L10,4 L0,8 Z" fill="#57606a"/>
+    </marker>
+  </defs>
+  <g>
+    <path d="M 30 20 H 152 L 170 38 V 100 H 30 Z M 152 20 V 38 H 170" fill="#f6f8fa" stroke="#57606a" stroke-width="1.5" stroke-linejoin="round"/>
+    <text x="100.0" y="64" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="14" font-weight="600" fill="#24292f">输入配置</text>
+    <text x="100.0" y="84" text-anchor="middle" font-family="Consolas, monospace" font-size="11" fill="#57606a">config.yaml</text>
+  </g>
+  <g>
+    <path d="M 240 20 H 362 L 380 38 V 100 H 240 Z M 362 20 V 38 H 380" fill="#fff8e6" stroke="#bf8700" stroke-width="1.5" stroke-linejoin="round"/>
+    <text x="310.0" y="64" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="14" font-weight="600" fill="#24292f">数据结构</text>
+    <text x="310.0" y="84" text-anchor="middle" font-family="Consolas, monospace" font-size="11" fill="#57606a">models.py</text>
+  </g>
+  <g>
+    <path d="M 450 20 H 572 L 590 38 V 100 H 450 Z M 572 20 V 38 H 590" fill="#eef6ff" stroke="#0969da" stroke-width="1.5" stroke-linejoin="round"/>
+    <text x="520.0" y="64" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="14" font-weight="600" fill="#24292f">渲染模板</text>
+    <text x="520.0" y="84" text-anchor="middle" font-family="Consolas, monospace" font-size="11" fill="#57606a">report.j2</text>
+  </g>
+  <line x1="170" y1="60.0" x2="240" y2="60.0" stroke="#57606a" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="380" y1="60.0" x2="450" y2="60.0" stroke="#57606a" stroke-width="1.5" marker-end="url(#arrow)"/>
+</svg>
