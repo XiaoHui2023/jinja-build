@@ -11,7 +11,7 @@
       &lt;mxCell id=&quot;file2&quot; value=&quot;&amp;lt;b&amp;gt;数据结构&amp;lt;/b&amp;gt;&amp;lt;br&amp;gt;&amp;lt;font style=&amp;quot;font-size: 11px; font-family: Consolas;&amp;quot;&amp;gt;models.py&amp;lt;/font&amp;gt;&quot; style=&quot;shape=document;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;fillColor=#fff8e6;strokeColor=#bf8700;size=0.18;fontColor=#24292f;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
         &lt;mxGeometry x=&quot;240&quot; y=&quot;20&quot; width=&quot;140&quot; height=&quot;80&quot; as=&quot;geometry&quot;/&gt;
       &lt;/mxCell&gt;
-      &lt;mxCell id=&quot;file3&quot; value=&quot;&amp;lt;b&amp;gt;渲染模板&amp;lt;/b&amp;gt;&amp;lt;br&amp;gt;&amp;lt;font style=&amp;quot;font-size: 11px; font-family: Consolas;&amp;quot;&amp;gt;report.j2&amp;lt;/font&amp;gt;&quot; style=&quot;shape=document;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;fillColor=#eef6ff;strokeColor=#0969da;size=0.18;fontColor=#24292f;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
+      &lt;mxCell id=&quot;file3&quot; value=&quot;&amp;lt;b&amp;gt;渲染模板&amp;lt;/b&amp;gt;&amp;lt;br&amp;gt;&amp;lt;font style=&amp;quot;font-size: 11px; font-family: Consolas;&amp;quot;&amp;gt;report.txt.j2&amp;lt;/font&amp;gt;&quot; style=&quot;shape=document;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;fillColor=#eef6ff;strokeColor=#0969da;size=0.18;fontColor=#24292f;&quot; vertex=&quot;1&quot; parent=&quot;1&quot;&gt;
         &lt;mxGeometry x=&quot;450&quot; y=&quot;20&quot; width=&quot;140&quot; height=&quot;80&quot; as=&quot;geometry&quot;/&gt;
       &lt;/mxCell&gt;
       &lt;mxCell id=&quot;edge1&quot; style=&quot;edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#57606a;endArrow=classic;endFill=1;&quot; edge=&quot;1&quot; parent=&quot;1&quot; source=&quot;file1&quot; target=&quot;file2&quot;&gt;
@@ -43,7 +43,7 @@
   <g>
     <path d="M 450 20 H 572 L 590 38 V 100 H 450 Z M 572 20 V 38 H 590" fill="#eef6ff" stroke="#0969da" stroke-width="1.5" stroke-linejoin="round"/>
     <text x="520.0" y="64" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="14" font-weight="600" fill="#24292f">渲染模板</text>
-    <text x="520.0" y="84" text-anchor="middle" font-family="Consolas, monospace" font-size="11" fill="#57606a">report.j2</text>
+    <text x="520.0" y="84" text-anchor="middle" font-family="Consolas, monospace" font-size="11" fill="#57606a">report.txt.j2</text>
   </g>
   <line x1="170" y1="60.0" x2="240" y2="60.0" stroke="#57606a" stroke-width="1.5" marker-end="url(#arrow)"/>
   <line x1="380" y1="60.0" x2="450" y2="60.0" stroke="#57606a" stroke-width="1.5" marker-end="url(#arrow)"/>

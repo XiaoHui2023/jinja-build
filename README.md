@@ -4,64 +4,70 @@
 
 ![输入配置、数据结构、渲染模板](images/pipeline.drawio.svg)
 
-### config.yaml
-
-```yaml
-greeting: Hello
-items:
-  - name: alpha
-    active: true
-  - name: beta
-    active: false
-  - name: gamma
-    active: true
-```
-
 ### models.py
 
 ```python
-from pydantic import BaseModel
+class Data:
+    def __init__(self, name: str, enabled: bool = True):
+        self.name = name
+        self.enabled = enabled
 
 
-class Item(BaseModel):
-    name: str
-    active: bool = True
-
-
-class Data(BaseModel):
-    greeting: str
-    items: list[Item]
+class Models:
+    def __init__(self, title: str, datas: list[Data], n: int):
+        self.title = title
+        self.datas = datas
+        self.n = n
 
     @property
-    def headline(self) -> str:
-        return self.greeting.upper()
+    def upper_title(self) -> str:
+        # 将 title 转为大写
+        return self.title.upper()
 
-    def tag(self, text: str) -> str:
-        return f"<<{text}>>"
+    def square(self, n: int) -> str:
+        # 计算平方
+        return str(n * n)
 ```
 
-### report.j2
+### report.txt.j2
 
 ```jinja2
-{{ headline }}
+{{ upper_title }}
 
-{% for item in items %}
-{% if item.active %}
-* {{ item.name | upper }} {{ item.name | tag }}
-{% else %}
-# skip {{ item.name }}
-{% endif %}
+{% for data in datas %}
+    {% if data.enabled %}
+{{ data.name }}
+    {% endif %}
 {% endfor %}
+
+{{ n }} * {{ n }} = {{ square(n) }}
+```
+
+### config.yaml
+
+```yaml
+title: hello
+datas:
+  - name: alpha
+    enabled: true
+  - name: beta
+    enabled: false
+  - name: gamma
+    enabled: true
+n: 5
 ```
 
 ### 生成结果
 
+生成文件 `report.txt`
+
 ```text
 HELLO
 
-* ALPHA <<alpha>>
-# skip beta
-* GAMMA <<gamma>>
+alpha
+gamma
+
+5 * 5 = 25
 ```
 
 ## 命令行参数
