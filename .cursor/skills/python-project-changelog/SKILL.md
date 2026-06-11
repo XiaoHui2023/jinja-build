@@ -11,6 +11,7 @@ description: >-
 
 ## 2026-06-11
 
+- **决议**：根 **`model.md`** 定稿：开篇两条列表（末类入口、递归 `*.j2`）；Pydantic / dataclass / 普通类仅最小示例；**过滤器**四分列表；**导入子脚本**（绝对路径、可无 `__init__.py`）；**可选文件**（渲染结果为空时不写盘）。口径写入 **design-notes**「用户向 model.md 专档」与 **`doc-surface-topic-page-zh`**。
 - **决议**：删除 **`PACKAGING.md`**；打包说明收进 **`tools/pack.sh`** / **`pack.bat`** 头注释；**`tools/bundle_release.py`** 将可执行文件与 **README.md** / **config.md** / **model.md** 打成发行压缩包。
 - **决议**：根目录用户向 **README.md** / **config.md** / **model.md** 分工：README 演示全流程与 CLI，专档写配置语法与 **models.py** 写法。
 - **决议**：`-t` / `--template` 仅接受模板目录；传入单个 `.j2` 文件时 `NotADirectoryError`。

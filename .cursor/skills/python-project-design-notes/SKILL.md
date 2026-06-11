@@ -58,7 +58,7 @@ description: >-
 
 ### 空白输出
 
-- 渲染结果 `strip()` 后为空则**不写文件**、不创建空目录。
+- 用户向表述：**渲染结果为空时**不写文件、不创建空目录（实现为 `strip()` 后为空）。
 
 ### 批量渲染
 
@@ -69,10 +69,11 @@ description: >-
 
 - 任务 = 输入 × 模板；`ThreadPoolExecutor`，`max_workers = min(任务数, cpu_count)`。
 
-### 导入隔离
+### 导入子脚本
 
-- `models.py` 经 `importlib` 私有模块名加载；加载时临时把 `models.py` 父目录插入 `sys.path`，结束后恢复。
-- 同目录 `helper.py` 等可在 `models.py` 里 import；不同模板目录的 models 模块名隔离。
+- `models.py` 经 `importlib` 加载；加载时临时把 `models.py` 父目录插入 `sys.path`，结束后恢复。
+- 用户向：**使用绝对路径导入**（如 `from demo_lib.formats import slugify`）；子目录**不必**放 `__init__.py`。
+- 不同模板目录的 models 模块名隔离（实现细节，**不写**进 `model.md`）。
 
 ### 主入口参数（与 `src/__main__.py` 一致）
 
@@ -89,7 +90,7 @@ description: >-
 
 1. **依赖**：`Jinja2`、`pydantic`、`python-library-configlib==0.1.1`；`packages = []`，`pip install -e .` 只拉依赖。
 2. **开发脚本**：Windows 用 `update.bat`、`test.bat`、`example.bat <示范名>`；Linux/macOS/Git Bash 用 `update.sh`、`test.sh`、`example.sh <示范名>`。均在仓库根 `.venv` 下执行；测试为 `python -m unittest discover -s tests`。
-3. **文档分工**：用户向 `src/README.md`、`examples/` 各子目录 README；模板仓库的说明文档由用户自行维护。Agent 口径**只**在本 skill；禁止把本 skill 全文抄进源码注释或 README。
+3. **文档分工**：根 **`README.md`** / **`config.md`** / **`model.md`** 三专档分工（见下节 **`model.md`**）；`examples/` 各子目录 README；模板仓库说明由用户自行维护。Agent 口径**只**在本 skill；禁止把本 skill 全文抄进源码注释或 README。
 4. **中文措辞**：`forbidden-doc-comment-vocabulary`；README 文首不写命令表。
 
 ## 打包（PyInstaller + staticx）
@@ -97,6 +98,20 @@ description: >-
 - **`tools/pack.sh`**（Linux / macOS / Git Bash）、**`tools/pack.bat`**（Windows）：默认打主入口；`.venv` + `pip install -e .` + PyInstaller；仅 `pack.sh` 在 Linux 上再 staticx（`patchelf`）。
 - 根目录 `jinja-build-cli.spec`；`upx=False`；无 `tools/bin` 捆绑。
 - 可执行名：`jinja-build` / `jinja-build.exe`。
+
+## 用户向 `model.md` 专档（定稿结构）
+
+与根 **`model.md`** 对齐；修订时保持下列目录，**不**擅自恢复已删段落（适用场景句、项目结构树、模块隔离用户向说明等）。
+
+| 节 | 内容 |
+| --- | --- |
+| 开篇 | 默认 `models.py`；**两条**列表：末类作数据结构入口；递归 `*.j2` |
+| **Pydantic / dataclass / 普通类** | 各 `Item` + `Models` 最小代码示例；**无**节末适用场景说明 |
+| **过滤器** | 「支持以下过滤器」+ **四条**列表：models 中的普通函数、models 中的 property 函数、jinja 内置过滤器、python 内置函数 |
+| **导入子脚本** | 「使用绝对路径导入」+ 目录树（`demo_lib/formats.py`，无 `__init__.py`）+ import 示例 |
+| **可选文件** | 「渲染结果为空时」不写盘 + `{% if %}` 与 yaml 示例；**无**节末用途说明 |
+
+过滤器用户向四分法 vs 实现：`property` 作模板变量（`{{ name }}`）；主类实例方法作全局函数与管道过滤器；`build_builtin_filters()` 注册常用管道函数；Jinja 环境自带过滤器与 `BASE_GLOBALS`（如 `len`）并存。细则见上节「过滤器」「property」。
 
 ## 与当前实现的对齐
 

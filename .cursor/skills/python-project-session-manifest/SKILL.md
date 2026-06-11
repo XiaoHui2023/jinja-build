@@ -47,3 +47,5 @@ description: >-
 - forbidden-doc-comment-vocabulary | `~/.cursor/skills/forbidden-doc-comment-vocabulary/SKILL.md`
 - python-pyinstaller-staticx-packaging | `~/.cursor/skills/python-pyinstaller-staticx-packaging/SKILL.md`
 - python-rich-terminal-colors | `~/.cursor/skills/python-rich-terminal-colors/SKILL.md`
+- doc-surface-roles-zh | `~/.cursor/skills/doc-surface-roles-zh/SKILL.md`
+- doc-surface-topic-page-zh | `~/.cursor/skills/doc-surface-topic-page-zh/SKILL.md`
