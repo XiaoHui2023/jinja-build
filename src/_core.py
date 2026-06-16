@@ -9,10 +9,14 @@ from configlib import load_config
 from pydantic import BaseModel, Field
 
 from _utils import jinja
-from _utils._cli_user_error import raise_after_report
+from jinja2.exceptions import TemplateError
+
+from _utils._cli_user_error import RenderFailure, raise_after_report
 from _utils._config_bundle import load_bundle_config
+from _utils._dynamic_loading import models_import_path
 from _utils._filters import build_model_method_filters
 from _utils._input_errors import print_input_model_error
+from _utils._jinja_errors import print_render_user_error, print_template_error
 
 
 class Core(BaseModel):
@@ -57,11 +61,14 @@ class Core(BaseModel):
 
     def run(self) -> None:
         """加载输入配置并渲染模板。"""
-        input_outputs = self._iter_input_outputs()
-        class_map = self._load_models()
-        inputs = self._load_inputs(class_map, input_outputs)
-        templates = self._load_template_paths()
-        self._render_all(inputs, templates)
+        if self.models_path is None:
+            raise RuntimeError("models path is not ready")
+        with models_import_path(self.models_path):
+            input_outputs = self._iter_input_outputs()
+            class_map = self._load_models()
+            inputs = self._load_inputs(class_map, input_outputs)
+            templates = self._load_template_paths()
+            self._render_all(inputs, templates)
 
     def _load_template_paths(self) -> tuple[list[Path], list[Path]]:
         """读取需要渲染的模板文件和搜索目录。"""
@@ -213,16 +220,33 @@ class Core(BaseModel):
             return
 
         max_workers = min(len(jobs), os.cpu_count() or 1)
+        failures: list[RenderFailure] = []
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = [executor.submit(self._render_one, *job) for job in jobs]
             for future in as_completed(futures):
-                future.result()
+                try:
+                    future.result()
+                except RenderFailure as failure:
+                    failures.append(failure)
+
+        if failures:
+            self._report_first_render_failure(failures)
 
     def _output_path(self, output_root: Path, path_j2: Path) -> str:
         """计算单个模板对应的输出路径。"""
         if self.template_path is None:
             raise RuntimeError("template path is not ready")
         return str(output_root / path_j2.relative_to(self.template_path).with_suffix(""))
+
+    def _report_first_render_failure(self, failures: list[RenderFailure]) -> None:
+        """并行渲染有多处失败时，只展示一张错误卡片。"""
+        failure = min(failures, key=lambda item: str(item.entry_path))
+        exc = failure.exc
+        if isinstance(exc, TemplateError):
+            print_template_error(exc, entry_path=failure.entry_path)
+        else:
+            print_render_user_error(exc, entry_path=failure.entry_path)
+        raise_after_report(exc)
 
     def _render_one(
         self,
@@ -234,13 +258,17 @@ class Core(BaseModel):
         search_paths: list[Path],
     ) -> None:
         """渲染并写出一个模板结果。"""
-        content = jinja.render(
-            path_j2,
-            input_model,
-            global_data,
-            filters_var=filter_data,
-            search_paths=search_paths,
-        )
+        try:
+            content = jinja.render(
+                path_j2,
+                input_model,
+                global_data,
+                filters_var=filter_data,
+                search_paths=search_paths,
+                defer_error_report=True,
+            )
+        except Exception as exc:
+            raise RenderFailure(exc, path_j2.resolve()) from None
         if not content.strip():
             return
         self.write_output(dst, content)

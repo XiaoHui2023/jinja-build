@@ -13,12 +13,29 @@ from ._jinja_errors import print_render_user_error, print_template_error
 from ._jinja_view import build_render_context
 
 
+def _handle_render_error(
+    exc: BaseException,
+    *,
+    entry_path: Path,
+    defer_error_report: bool,
+) -> None:
+    if defer_error_report:
+        raise exc
+    if isinstance(exc, TemplateError):
+        print_template_error(exc, entry_path=entry_path)
+    else:
+        print_render_user_error(exc, entry_path=entry_path)
+    raise_after_report(exc)
+
+
 def render(
     src: str | Path,
     data: Any,
     globals_var: dict[str, object] | None = None,
     filters_var: dict[str, Callable[..., object]] | None = None,
     search_paths: list[str | Path] | None = None,
+    *,
+    defer_error_report: bool = False,
 ) -> str:
     """渲染模板文件。
 
@@ -28,6 +45,7 @@ def render(
         globals_var: 模板里可直接调用的对象
         filters_var: 模板管道过滤器
         search_paths: 模板继承和包含时可搜索的目录
+        defer_error_report: 为 True 时不打印错误卡片，由调用方统一展示
     """
     if globals_var is None:
         globals_var = {}
@@ -43,23 +61,19 @@ def render(
     try:
         template = env.get_template(template_name)
     except TemplateError as exc:
-        print_template_error(exc, entry_path=src_path)
-        raise_after_report(exc)
+        _handle_render_error(exc, entry_path=src_path, defer_error_report=defer_error_report)
 
     try:
         context = build_render_context(data)
     except Exception as exc:
-        print_render_user_error(exc, entry_path=src_path)
-        raise_after_report(exc)
+        _handle_render_error(exc, entry_path=src_path, defer_error_report=defer_error_report)
 
     try:
         return template.render(context)
     except TemplateError as exc:
-        print_template_error(exc, entry_path=src_path)
-        raise_after_report(exc)
+        _handle_render_error(exc, entry_path=src_path, defer_error_report=defer_error_report)
     except Exception as exc:
-        print_render_user_error(exc, entry_path=src_path)
-        raise_after_report(exc)
+        _handle_render_error(exc, entry_path=src_path, defer_error_report=defer_error_report)
 
 
 def load_models(file_path: str | Path) -> list[type]:

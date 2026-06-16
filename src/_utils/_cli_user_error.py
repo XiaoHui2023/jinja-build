@@ -1,5 +1,19 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
+from pathlib import Path
+
+
+@dataclass(frozen=True)
+class RenderFailure(Exception):
+    """并行渲染中单次失败；由 Core 汇总后只展示一张错误卡片。"""
+
+    exc: BaseException
+    entry_path: Path
+
+    def __str__(self) -> str:
+        return str(self.exc)
+
 
 class AlreadyReportedError(Exception):
     """终端已用 Rich 展示过的用户侧错误，入口层应直接退出。"""
@@ -16,5 +30,6 @@ def raise_after_report(exc: BaseException) -> None:
 
 __all__ = [
     "AlreadyReportedError",
+    "RenderFailure",
     "raise_after_report",
 ]

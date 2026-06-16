@@ -14,7 +14,7 @@
   out.j2
 ```
 
-加载 `models.py` 时，工具会把**该文件所在目录**临时加入 `sys.path`，因此 `demo_lib` 作为顶层包可被导入。请使用 `from demo_lib.xxx import …`，不要依赖仓库外的已安装包名。
+加载 `models.py` 时，工具会把**该文件所在目录**加入 `sys.path`，并在整次构建（含模板渲染、`@property` 求值）期间保持，因此同目录模块可在顶层或函数内延迟 `import`。请使用 `from demo_lib.xxx import …`，不要依赖仓库外的已安装包名。
 
 ## 生成
 

@@ -9,6 +9,11 @@ description: >-
 
 （最新在上。规则见 `~/.cursor/skills/agent-project-changelog/SKILL.md`。）
 
+## 2026-06-16
+
+- **决议**：整次 `Core.run()` 通过 `models_import_path` 保持 `models.py` 父目录在 `sys.path`，支持 `@property` / 方法内的**延迟导入**；单独 `load_module` 仍临时加路径后恢复。
+- **决议**：并行渲染（输入 × 模板）有多处失败时 **只展示一张** Rich 错误卡片；`Core._render_all` 汇总 `RenderFailure` 后按入口模板路径字典序取首个展示。
+
 ## 2026-06-11
 
 - **决议**：根 **`model.md`** 定稿：开篇两条列表（末类入口、递归 `*.j2`）；Pydantic / dataclass / 普通类仅最小示例；**过滤器**四分列表；**导入子脚本**（绝对路径、可无 `__init__.py`）；**可选文件**（渲染结果为空时不写盘）。口径写入 **design-notes**「用户向 model.md 专档」与 **`doc-surface-topic-page-zh`**。

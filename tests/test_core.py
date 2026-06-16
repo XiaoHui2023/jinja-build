@@ -195,6 +195,94 @@ class CoreRenderTests(unittest.TestCase):
             self.assertIn("bad 求值失败", str(source))
             self.assertFalse((output / "out.txt").exists())
 
+    def test_lazy_import_during_property_eval(self) -> None:
+        """渲染期 property 内的延迟导入应能解析 models 同目录模块。"""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            template = root / "template"
+            output = root / "output"
+            template.mkdir()
+            (template / "lazy_helper.py").write_text("VALUE = 'lazy-ok'\n", encoding="utf-8")
+            (template / "models.py").write_text(
+                "from pydantic import BaseModel\n"
+                "\n"
+                "class Data(BaseModel):\n"
+                "    name: str\n"
+                "\n"
+                "    @property\n"
+                "    def label(self):\n"
+                "        from lazy_helper import VALUE\n"
+                "        return f'{VALUE}:{self.name}'\n",
+                encoding="utf-8",
+            )
+            self._write_json(root / "in.json", {"name": "ada"})
+            (template / "out.txt.j2").write_text("{{ label }}\n", encoding="utf-8")
+
+            Core(
+                template=str(template),
+                input=str(root / "in.json"),
+                output=str(output),
+            ).run()
+
+            self.assertEqual(
+                (output / "out.txt").read_text(encoding="utf-8"),
+                "lazy-ok:ada",
+            )
+
+    def test_models_import_path_restored_after_run(self) -> None:
+        """Core.run 结束后应移除本次加入的 models 搜索路径。"""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            template = root / "template"
+            output = root / "output"
+            template.mkdir()
+            self._write_model(template)
+            self._write_json(root / "in.json", {"name": "ada"})
+            (template / "out.txt.j2").write_text("{{ name }}\n", encoding="utf-8")
+            models_parent = str(template.resolve())
+            before = sys.path.copy()
+
+            Core(
+                template=str(template),
+                input=str(root / "in.json"),
+                output=str(output),
+            ).run()
+
+            self.assertEqual(sys.path, before)
+            self.assertNotIn(models_parent, sys.path)
+
+    def test_parallel_template_errors_report_once(self) -> None:
+        """多个模板同一根因失败时只展示一张错误卡片。"""
+        from unittest.mock import patch
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            template = root / "template"
+            output = root / "output"
+            template.mkdir()
+            (template / "models.py").write_text(
+                "class Data:\n"
+                "    def __init__(self, name=''):\n"
+                "        self.name = name\n"
+                "\n"
+                "    @property\n"
+                "    def bad(self):\n"
+                "        raise ValueError('prop boom')\n",
+                encoding="utf-8",
+            )
+            self._write_json(root / "in.json", {"name": "ada"})
+            (template / "a.j2").write_text("{{ bad }}\n", encoding="utf-8")
+            (template / "b.j2").write_text("{{ bad }}\n", encoding="utf-8")
+
+            with patch("_core.print_render_user_error") as print_error:
+                with self.assertRaises(AlreadyReportedError):
+                    Core(
+                        template=str(template),
+                        input=str(root / "in.json"),
+                        output=str(output),
+                    ).run()
+                print_error.assert_called_once()
+
     def test_model_method_error_aborts_with_report(self) -> None:
         """models 方法在模板中失败应报错中止。"""
         with tempfile.TemporaryDirectory() as tmp:
@@ -372,7 +460,7 @@ class CoreRenderTests(unittest.TestCase):
             )
 
     def test_dynamic_loading_restores_sys_path(self) -> None:
-        """动态导入期间可读同目录辅助文件，结束后恢复搜索路径。"""
+        """单独 load_module 时临时加入搜索路径，调用结束后恢复。"""
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             (root / "helper.py").write_text("VALUE = 3\n", encoding="utf-8")

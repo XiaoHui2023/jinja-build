@@ -71,7 +71,8 @@ description: >-
 
 ### 导入子脚本
 
-- `models.py` 经 `importlib` 加载；加载时临时把 `models.py` 父目录插入 `sys.path`，结束后恢复。
+- `models.py` 经 `importlib` 加载；**整次 `run()`** 把 `models.py` 父目录插入 `sys.path`（结束后移除），加载期与渲染期（含 `@property` 内延迟 `import`）均可解析同目录模块。
+- 单独调用 `load_module` 时仍为加载过程内的临时路径，结束后恢复。
 - 用户向：**使用绝对路径导入**（如 `from demo_lib.formats import slugify`）；子目录**不必**放 `__init__.py`。
 - 不同模板目录的 models 模块名隔离（实现细节，**不写**进 `model.md`）。
 

@@ -2,8 +2,33 @@ import ast
 import hashlib
 import importlib.util
 import sys
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
+
+
+@contextmanager
+def models_import_path(file_path: str | Path) -> Iterator[Path]:
+    """在上下文期间把 models.py 父目录留在 sys.path，供延迟导入使用。
+
+    Args:
+        file_path: models.py 或其它数据结构文件路径
+    """
+    parent = Path(file_path).resolve().parent
+    parent_text = str(parent)
+    inserted = False
+    if parent_text not in sys.path:
+        sys.path.insert(0, parent_text)
+        inserted = True
+    try:
+        yield parent
+    finally:
+        if inserted:
+            try:
+                sys.path.remove(parent_text)
+            except ValueError:
+                pass
 
 
 def load_module(file_path: str | Path) -> dict[str, Any]:
@@ -77,5 +102,7 @@ def get_definitions_in_order(filename: str | Path) -> list[str]:
 
 
 __all__ = [
+    "get_definitions_in_order",
     "load_module",
+    "models_import_path",
 ]

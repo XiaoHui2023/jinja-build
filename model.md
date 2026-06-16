@@ -104,6 +104,8 @@ class Models(BaseModel):
         return slugify(self.name)
 ```
 
+`models.py` 同目录下的模块可在加载时导入，也可在 `@property` 或方法内延迟导入；整次构建期间该目录保持在 Python 搜索路径中。
+
 ## 可选文件
 
 渲染结果为空时，不会创建输出文件，也不会为它创建空目录。
