@@ -68,7 +68,7 @@ apply_staticx_linux() {
   local tmp_out="$ROOT/dist/.${dist_name}-staticx.tmp"
   rm -f "$tmp_out"
   echo "==> staticx: $pyi_out -> $dist_name"
-  "$staticx" "$pyi_out" "$tmp_out"
+  "$staticx" --no-compress "$pyi_out" "$tmp_out"
   mv -f "$tmp_out" "$pyi_out"
   chmod +x "$pyi_out"
   echo "完成: $pyi_out (staticx self-extracting binary; test on target machines)"
