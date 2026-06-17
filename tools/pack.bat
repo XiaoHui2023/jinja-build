@@ -54,7 +54,7 @@ echo ==^> PyInstaller: %SPEC%
 if errorlevel 1 exit /b 1
 
 if exist "%CD%\dist\jinja-build.exe" (
-    echo 完成: %CD%\dist\jinja-build.exe (Windows, no staticx)
+    echo 完成: %CD%\dist\jinja-build.exe [Windows, no staticx]
 ) else (
     echo 错误: 未在 dist 找到 jinja-build.exe。>&2
     exit /b 1

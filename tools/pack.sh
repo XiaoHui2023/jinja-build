@@ -21,10 +21,10 @@ cd "$ROOT"
 TARGET="${1:-src}"
 
 ensure_venv() {
-  if [[ -f "$ROOT/.venv/Scripts/python.exe" ]]; then
-    PYTHON_CMD=("$ROOT/.venv/Scripts/python.exe")
-  elif [[ -f "$ROOT/.venv/bin/python" ]]; then
+  if [[ -f "$ROOT/.venv/bin/python" ]]; then
     PYTHON_CMD=("$ROOT/.venv/bin/python")
+  elif [[ -f "$ROOT/.venv/Scripts/python.exe" ]]; then
+    PYTHON_CMD=("$ROOT/.venv/Scripts/python.exe")
   else
     echo "未找到 .venv，正在创建..."
     case "$(uname -s 2>/dev/null || true)" in
@@ -92,7 +92,13 @@ build_cli() {
     exit 1
   fi
   case "$(uname -s 2>/dev/null || true)" in
-    Linux) apply_staticx_linux "$dist_name" ;;
+    Linux)
+      if [[ "${PACK_LINUX_SKIP_STATICX:-}" == "1" ]]; then
+        echo "完成: $ROOT/dist/${dist_name} (PACK_LINUX_SKIP_STATICX=1, skip staticx)"
+      else
+        apply_staticx_linux "$dist_name"
+      fi
+      ;;
     *) echo "完成: $ROOT/dist/${dist_name} (non-Linux, skip staticx)" ;;
   esac
 }
