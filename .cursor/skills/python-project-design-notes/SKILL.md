@@ -89,7 +89,7 @@ description: >-
 
 ## 来自用户/团队的硬性要求
 
-1. **依赖**：`Jinja2`、`pydantic`、`python-library-configlib==0.1.1`；`packages = []`，`pip install -e .` 只拉依赖。
+1. **依赖**：`Jinja2`、`pydantic`、`python-library-configlib==0.1.7`、`rich`；`packages = []`，`pip install -e .` 只拉依赖。
 2. **开发脚本**：Windows 用 `update.bat`、`test.bat`、`example.bat <示范名>`；Linux/macOS/Git Bash 用 `update.sh`、`test.sh`、`example.sh <示范名>`。均在仓库根 `.venv` 下执行；测试为 `python -m unittest discover -s tests`。
 3. **文档分工**：根 **`README.md`** / **`config.md`** / **`model.md`** 三专档分工（见下节 **`model.md`**）；`examples/` 各子目录 README；模板仓库说明由用户自行维护。Agent 口径**只**在本 skill；禁止把本 skill 全文抄进源码注释或 README。
 4. **中文措辞**：`forbidden-doc-comment-vocabulary`；README 文首不写命令表。

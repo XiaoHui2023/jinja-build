@@ -9,6 +9,10 @@ description: >-
 
 （最新在上。规则见 `~/.cursor/skills/agent-project-changelog/SKILL.md`。）
 
+## 2026-06-19
+
+- **决议**：输入配置依赖 **configlib 0.1.7**；`config.md` 同步 CSV 字典表格式说明。
+
 ## 2026-06-16
 
 - **决议**：整次 `Core.run()` 通过 `models_import_path` 保持 `models.py` 父目录在 `sys.path`，支持 `@property` / 方法内的**延迟导入**；单独 `load_module` 仍临时加路径后恢复。
