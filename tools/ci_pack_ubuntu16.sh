@@ -14,7 +14,9 @@ apt-get install -y --no-install-recommends \
   wget \
   bzip2 \
   binutils \
-  patchelf
+  patchelf \
+  build-essential \
+  musl-tools
 rm -rf /var/lib/apt/lists/*
 
 MINICONDA=Miniconda3-py310_23.5.2-0-Linux-x86_64.sh

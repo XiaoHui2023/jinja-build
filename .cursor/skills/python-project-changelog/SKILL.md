@@ -12,7 +12,7 @@ description: >-
 ## 2026-06-20
 
 - **决议**：GitHub Release 切 **滚动自动发布**（push `main` 覆盖 `v{version}` tag 与附件）；workflow 触发由 tag 改为 `branches: [main]`。
-- **决议**：Linux CI 恢复 **staticx**（`ci_pack_ubuntu16.sh` 去掉 `PACK_LINUX_SKIP_STATICX=1`）。
+- **决议**：Linux CI 恢复 **staticx**（`ci_pack_ubuntu16.sh` 去掉 `PACK_LINUX_SKIP_STATICX=1`）；Ubuntu 16.04 上 **从源码安装 staticx**（`--no-binary=staticx`）并 `readelf` 自检，修复 wheel bootloader 在旧 objcopy 下 exit 139。
 
 ## 2026-06-19
 

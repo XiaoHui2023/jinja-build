@@ -59,7 +59,13 @@ apply_staticx_linux() {
     echo "错误: Linux staticx 需要系统命令 patchelf，例如 sudo apt install patchelf。" >&2
     exit 1
   fi
-  "${PYTHON_CMD[@]}" -m pip install -q --upgrade --force-reinstall staticx
+  local venv_bin
+  venv_bin="$(dirname "${PYTHON_CMD[0]}")"
+  export PATH="$venv_bin:$PATH"
+  # staticx wheels embed a musl bootloader that old objcopy versions can mangle
+  # on Ubuntu 16.04/CentOS 7 class builders. Build staticx from source instead.
+  "${PYTHON_CMD[@]}" -m pip install -q --upgrade --force-reinstall scons
+  "${PYTHON_CMD[@]}" -m pip install -q --upgrade --force-reinstall --no-cache-dir --no-build-isolation --no-binary=staticx staticx
   local staticx="$ROOT/.venv/bin/staticx"
   if [[ ! -x "$staticx" ]]; then
     echo "错误: 未找到可执行的 .venv/bin/staticx。" >&2
@@ -68,9 +74,22 @@ apply_staticx_linux() {
   local tmp_out="$ROOT/dist/.${dist_name}-staticx.tmp"
   rm -f "$tmp_out"
   echo "==> staticx: $pyi_out -> $dist_name"
-  "$staticx" --no-compress "$pyi_out" "$tmp_out"
+  if ! "$staticx" "$pyi_out" "$tmp_out"; then
+    rm -f "$tmp_out"
+    echo "==> staticx 失败，重试 staticx --no-compress"
+    if ! "$staticx" --no-compress "$pyi_out" "$tmp_out"; then
+      echo "错误: staticx 与 staticx --no-compress 均失败；不得跳过 staticx，请检查 patchelf、依赖库与构建日志。" >&2
+      exit 1
+    fi
+  fi
   mv -f "$tmp_out" "$pyi_out"
   chmod +x "$pyi_out"
+  local first_load_vaddr
+  first_load_vaddr="$(readelf -Wl "$pyi_out" | awk '$1 == "LOAD" { print $3; exit }')"
+  if [[ "$first_load_vaddr" == "0x0000000000000000" ]]; then
+    echo "错误: staticx 产物 ELF 被旧 objcopy 损坏（首个 LOAD VirtAddr 为 0x0）；请确保 staticx 从源码构建，且不要使用 PyPI wheel bootloader。" >&2
+    exit 1
+  fi
   echo "完成: $pyi_out (staticx self-extracting binary; test on target machines)"
 }
 
