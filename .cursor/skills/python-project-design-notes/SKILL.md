@@ -100,6 +100,14 @@ description: >-
 - 根目录 `jinja-build-cli.spec`；`upx=False`；无 `tools/bin` 捆绑。
 - 可执行名：`jinja-build` / `jinja-build.exe`。
 
+## GitHub Release（自动发布：滚动 + staticx）
+
+- **模式**：push **`main`** → `.github/workflows/release.yml` 在 Ubuntu 16.04 容器内 PyInstaller + **staticx** → frozen smoke → CI 覆盖 **`v{version}`** tag 与同名 Release 附件。
+- **版本**：`pyproject.toml` `[project].version`（当前 `0.0.0`）；滚动模式下**默认不改** version。
+- **CI 脚本**：`tools/ci_pack_ubuntu16.sh`（Miniconda py310 + `tools/pack.sh src`）。
+- **发布门禁**：`dist/jinja-build` 跑 `examples/02-filters` 完整流程并 grep 输出。
+- **附件**：`jinja-build`、`jinja-build-{version}-linux.tar.gz`（含 README / config.md / model.md / images）。
+
 ## 用户向 `model.md` 专档（定稿结构）
 
 与根 **`model.md`** 对齐；修订时保持下列目录，**不**擅自恢复已删段落（适用场景句、项目结构树、模块隔离用户向说明等）。

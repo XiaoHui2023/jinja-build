@@ -9,6 +9,11 @@ description: >-
 
 （最新在上。规则见 `~/.cursor/skills/agent-project-changelog/SKILL.md`。）
 
+## 2026-06-20
+
+- **决议**：GitHub Release 切 **滚动自动发布**（push `main` 覆盖 `v{version}` tag 与附件）；workflow 触发由 tag 改为 `branches: [main]`。
+- **决议**：Linux CI 恢复 **staticx**（`ci_pack_ubuntu16.sh` 去掉 `PACK_LINUX_SKIP_STATICX=1`）。
+
 ## 2026-06-19
 
 - **决议**：输入配置依赖 **configlib 0.1.7**；`config.md` 同步 CSV 字典表格式说明。

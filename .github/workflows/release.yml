@@ -2,7 +2,7 @@ name: Release
 
 on:
   push:
-    tags: ["v*"]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -39,16 +39,57 @@ jobs:
 
   publish-release:
     needs: build-linux-ubuntu16
-    if: startsWith(github.ref, 'refs/tags/') && needs.build-linux-ubuntu16.result == 'success'
+    if: always() && needs.build-linux-ubuntu16.result == 'success'
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve release tag
+        id: release
+        shell: bash
+        run: |
+          version="$(python3 - <<'PY'
+          import re
+          from pathlib import Path
+
+          in_project = False
+          for line in Path("pyproject.toml").read_text(encoding="utf-8").splitlines():
+              stripped = line.strip()
+              if stripped == "[project]":
+                  in_project = True
+                  continue
+              if stripped.startswith("[") and stripped.endswith("]"):
+                  in_project = False
+              if in_project:
+                  match = re.match(r'version\s*=\s*["\']([^"\']+)["\']', stripped)
+                  if match:
+                      print(match.group(1))
+                      raise SystemExit(0)
+          raise SystemExit("pyproject.toml missing [project].version")
+          PY
+          )"
+          test -n "$version"
+          echo "tag=v${version}" >> "$GITHUB_OUTPUT"
+
       - uses: actions/download-artifact@v4
         with:
           name: linux-release
           path: release-assets
 
+      - name: Move release tag
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -fa "${{ steps.release.outputs.tag }}" -m "Release ${{ steps.release.outputs.tag }}"
+          git push origin "${{ steps.release.outputs.tag }}" --force
+
       - uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.release.outputs.tag }}
           generate_release_notes: false
           fail_on_unmatched_files: true
+          overwrite_files: true
           files: release-assets/**

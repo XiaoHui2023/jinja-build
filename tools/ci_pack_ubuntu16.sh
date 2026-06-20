@@ -32,5 +32,4 @@ bash "/tmp/${MINICONDA}" -b -p /opt/conda
 export PATH="/opt/conda/bin:$PATH"
 python3 -V
 
-export PACK_LINUX_SKIP_STATICX=1
 bash tools/pack.sh src
