@@ -125,3 +125,7 @@ render:
 #	-mf $(MODELS_FILENAME) --debug-input $(DEBUG_INPUT) \
 #	--debug-models $(DEBUG_MODELS) --theme $(THEME)
 ```
+
+## 支持的第三方库
+
+- rich

@@ -9,6 +9,11 @@ description: >-
 
 （最新在上。规则见 `~/.cursor/skills/agent-project-changelog/SKILL.md`。）
 
+## 2026-06-26
+
+- **决议**：PyInstaller `hiddenimports` 用 `collect_submodules("rich")`，修复 `models.py` 动态 `import rich.tree` 在 frozen 可执行文件中失败。
+- **决议**：新增示范 `examples/08-third-party-rich`；Release CI smoke 增加对该示范的 frozen 渲染检查。
+
 ## 2026-06-20
 
 - **决议**：GitHub Release 切 **滚动自动发布**（push `main` 覆盖 `v{version}` tag 与附件）；workflow 触发由 tag 改为 `branches: [main]`。

@@ -29,6 +29,11 @@ jobs:
             -i examples/02-filters/config.yaml \
             -o .release-smoke/02-filters
           grep -q "title_filter: title:hello" .release-smoke/02-filters/demo
+          ./dist/jinja-build \
+            -t examples/08-third-party-rich \
+            -i examples/08-third-party-rich/config.yaml \
+            -o .release-smoke/08-third-party-rich
+          grep -q "models.py" .release-smoke/08-third-party-rich/out
 
       - uses: actions/upload-artifact@v4
         with:

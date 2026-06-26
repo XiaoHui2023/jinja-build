@@ -1,0 +1,5 @@
+title: jinja-build
+children:
+  - models.py
+  - templates
+  - generated

@@ -9,6 +9,7 @@ from pathlib import Path
 
 from PyInstaller.building.api import EXE, PYZ
 from PyInstaller.building.build_main import Analysis
+from PyInstaller.utils.hooks import collect_submodules
 
 block_cipher = None
 
@@ -36,7 +37,8 @@ a = Analysis(
     pathex=[str(repo_root / "src")],
     binaries=[],
     datas=[],
-    hiddenimports=[],
+    # models.py 在运行时动态 import 第三方库；需显式收集 rich 子模块（如 rich.tree）。
+    hiddenimports=collect_submodules("rich"),
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

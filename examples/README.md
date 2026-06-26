@@ -13,6 +13,7 @@
 | [05-models-imports](05-models-imports/README.md) | `models.py` 引用同目录 Python 包（绝对导入） |
 | [06-config-variables](06-config-variables/README.md) | 配置文件中的 `${}` 变量引用 |
 | [07-multifile-config](07-multifile-config/README.md) | 多文件配置：`# 文件名` 捆绑与 `!include` |
+| [08-third-party-rich](08-third-party-rich/README.md) | `models.py` 导入第三方库 `rich`（含打包 smoke） |
 
 ## 生成方式
 
