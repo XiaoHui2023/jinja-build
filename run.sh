@@ -8,7 +8,7 @@ cd "$ROOT"
 
 if [[ $# -lt 3 ]]; then
   echo "用法: $0 <template> <input> <output> [额外参数...]" >&2
-  echo "例如: $0 examples/01-jinja-basics examples/01-jinja-basics/config.yaml examples/01-jinja-basics/generated" >&2
+  echo "例如: $0 examples/jinja-basics examples/jinja-basics/config.yaml examples/jinja-basics/generated" >&2
   exit 1
 fi
 

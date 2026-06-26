@@ -23,6 +23,7 @@ tools\pack.bat
 | 目标 | 产物 |
 | --- | --- |
 | 主入口（src） | `jinja-build` / `jinja-build.exe` |
+| 发行压缩包 | 可执行文件 + `README.md` / `config.md` / `model.md` / `images` / `examples` |
 
 | 平台 | 脚本 | staticx |
 | --- | --- | --- |

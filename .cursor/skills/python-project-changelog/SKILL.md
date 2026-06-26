@@ -11,8 +11,9 @@ description: >-
 
 ## 2026-06-26
 
+- **决议**：发行压缩包纳入 `examples/`（排除 `generated/`）；示范目录去掉序号前缀并重写各 README。
 - **决议**：PyInstaller `hiddenimports` 用 `collect_submodules("rich")`，修复 `models.py` 动态 `import rich.tree` 在 frozen 可执行文件中失败。
-- **决议**：新增示范 `examples/08-third-party-rich`；Release CI smoke 增加对该示范的 frozen 渲染检查。
+- **决议**：新增示范 `examples/third-party-rich`；Release CI smoke 增加对该示范的 frozen 渲染检查。
 
 ## 2026-06-20
 
@@ -41,7 +42,7 @@ description: >-
 
 ## 2026-05-27
 
-- **决议**：输入配置支持 `#<文件名>` 单文件捆绑（`src/_utils/_config_bundle.py`）；`!include` 与 `${}` 由 **configlib 0.1.3** 提供；示范 `examples/07-multifile-config`。
+- **决议**：输入配置支持 `#<文件名>` 单文件捆绑（`src/_utils/_config_bundle.py`）；`!include` 与 `${}` 由 **configlib 0.1.3** 提供；示范 `examples/multifile-config`。
 - **决议**：移除自创环境变量 **`JINJA_BUILD_THEME`**；错误配色仅 **`--theme`**（默认 `auto`）。用户根新增 **`python-script-environment-variables`** skill；已列入预加载与 **`agent-project-preload`** Python 表。
 
 ## 2026-05-26

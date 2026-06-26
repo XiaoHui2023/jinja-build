@@ -2,7 +2,7 @@
 cd /d "%~dp0"
 if "%~3"=="" (
   echo 用法: run.bat ^<template^> ^<input^> ^<output^> [额外参数...]
-  echo 例如: run.bat examples\01-jinja-basics examples\01-jinja-basics\config.yaml examples\01-jinja-basics\generated
+  echo 例如: run.bat examples\jinja-basics examples\jinja-basics\config.yaml examples\jinja-basics\generated
   exit /b 1
 )
 if not exist ".venv\Scripts\python.exe" call update.bat

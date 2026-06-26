@@ -2,7 +2,7 @@
 cd /d "%~dp0"
 if "%~1"=="" (
   echo 用法: example.bat ^<示范目录名^>
-  echo 例如: example.bat 01-jinja-basics
+  echo 例如: example.bat jinja-basics
   exit /b 1
 )
 if not exist ".venv\Scripts\python.exe" call update.bat

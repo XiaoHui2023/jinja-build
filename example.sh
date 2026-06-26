@@ -8,7 +8,7 @@ cd "$ROOT"
 
 if [[ $# -lt 1 ]]; then
   echo "用法: $0 <示范目录名>" >&2
-  echo "例如: $0 01-jinja-basics" >&2
+  echo "例如: $0 jinja-basics" >&2
   exit 1
 fi
 

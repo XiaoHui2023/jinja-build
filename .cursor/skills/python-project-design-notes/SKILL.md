@@ -105,7 +105,7 @@ description: >-
 - **模式**：push **`main`** → `.github/workflows/release.yml` 在 Ubuntu 16.04 容器内 PyInstaller + **staticx** → frozen smoke → CI 覆盖 **`v{version}`** tag 与同名 Release 附件。
 - **版本**：`pyproject.toml` `[project].version`（当前 `0.0.0`）；滚动模式下**默认不改** version。
 - **CI 脚本**：`tools/ci_pack_ubuntu16.sh`（Miniconda py310 + `tools/pack.sh src`）。
-- **发布门禁**：`dist/jinja-build` 跑 `examples/02-filters` 完整流程并 grep 输出。
+- **发布门禁**：`dist/jinja-build` 跑 `examples/filters` 完整流程并 grep 输出。
 - **附件**：`jinja-build`、`jinja-build-{version}-linux.tar.gz`（含 README / config.md / model.md / images）。
 
 ## 用户向 `model.md` 专档（定稿结构）
@@ -129,7 +129,8 @@ description: >-
 
 ## 示范仓库 `examples/`（教学）
 
-- 索引：[examples/README.md](../../examples/README.md)；子目录 `01`～`06`，各含 README、`models.py`、`config.yaml`、`.j2`。
+- 索引：[examples/README.md](../../examples/README.md)；子目录无序号前缀，各含 README、`models.py`、`config.yaml`、`.j2`。
+- 发行压缩包含 `examples/`（不含各目录 `generated/`）。
 - 生成：`example.bat <目录名>` 或 `example.sh <目录名>`（**无** run-all）；产物在 `examples/<名>/generated/`（gitignore）。
 - 内置过滤器不覆盖 Jinja 自带 `sum`/`min`/`max`/`sorted`。
 

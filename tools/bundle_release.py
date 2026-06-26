@@ -16,6 +16,7 @@ RELEASE_PATHS = (
     "config.md",
     "model.md",
     "images",
+    "examples",
 )
 
 
@@ -42,6 +43,19 @@ def _platform_tag() -> str:
     )
 
 
+def _copy_release_item(src: pathlib.Path, dest: pathlib.Path) -> None:
+    if src.is_dir():
+        ignore = (
+            shutil.ignore_patterns("generated", "__pycache__", "*.pyc")
+            if src.name == "examples"
+            else None
+        )
+        shutil.copytree(src, dest, ignore=ignore)
+        return
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(src, dest)
+
+
 def main() -> int:
     dist = ROOT / "dist"
     tag = f"jinja-build-{_project_version(ROOT)}-{_platform_tag()}"
@@ -66,12 +80,7 @@ def main() -> int:
         if not src.exists():
             print(f"错误: 未找到 {src}", file=sys.stderr)
             return 1
-        dest = bundle_dir / rel
-        if src.is_dir():
-            shutil.copytree(src, dest)
-        else:
-            dest.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(src, dest)
+        _copy_release_item(src, bundle_dir / rel)
 
     archive_base = dist / tag
     fmt = "zip" if platform.system() == "Windows" else "gztar"
