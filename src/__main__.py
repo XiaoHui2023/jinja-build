@@ -17,9 +17,7 @@ def get_args() -> argparse.Namespace:
         default="models.py",
         help="python数据结构文件名",
     )
-    input_group = parser.add_mutually_exclusive_group()
-    input_group.add_argument("-i", "--input", type=str, help="输入配置文件")
-    input_group.add_argument("-b", "--batch", nargs="+", type=str, help="批处理输入配置文件列表")
+    parser.add_argument("-i", "--input", type=str, help="输入配置文件或配置文件目录")
     parser.add_argument(
         "--debug-input",
         type=str,
@@ -42,9 +40,9 @@ def get_args() -> argparse.Namespace:
     return args
 
 
-def main(batch: list[str] | None, **kwargs: object) -> None:
-    """按单次参数或批处理配置执行构建。"""
-    Core(batch=batch, **kwargs).run()
+def main(**kwargs: object) -> None:
+    """按单次输入或目录输入执行构建。"""
+    Core(**kwargs).run()
 
 
 if __name__ == "__main__":

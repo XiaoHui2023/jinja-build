@@ -6,7 +6,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 from configlib import load_config
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from _utils import jinja
 from jinja2.exceptions import TemplateError
@@ -22,9 +22,10 @@ from _utils._jinja_errors import print_render_user_error, print_template_error
 class Core(BaseModel):
     """把配置数据套进模板目录，生成一组输出文件。"""
 
+    model_config = ConfigDict(extra="forbid")
+
     template: str = Field(description="模板目录。")
-    input: str | None = Field(default=None, description="输入配置文件，省略时按空配置处理。")
-    batch: list[str] | None = Field(default=None, description="多个输入配置文件，共用同一套模板。")
+    input: str | None = Field(default=None, description="输入配置文件或配置文件目录，省略时按空配置处理。")
     output: str = Field(description="输出文件或目录。")
     models_filename: str = Field(default="models.py", description="模板目录中的数据结构文件。")
     debug_input: str | None = Field(
@@ -45,10 +46,6 @@ class Core(BaseModel):
         """准备模板目录与数据结构文件路径。"""
         if not self.template:
             raise Exception("require template")
-        if self.input and self.batch:
-            raise ValueError("input and batch cannot be used together")
-        if self.batch:
-            self._check_batch_names(self.batch)
         self.template_path = Path(self.template)
         if not self.template_path.exists():
             raise FileNotFoundError(self.template_path)
@@ -90,34 +87,44 @@ class Core(BaseModel):
     def _load_inputs(
         self,
         class_map: list[type],
-        input_outputs: list[tuple[str | None, Path]],
+        input_outputs: list[tuple[str | None, Path, str | None]],
     ) -> list[tuple[object, dict[str, object], dict[str, object], Path]]:
         """读取全部输入配置并创建模板可用的数据对象。"""
         models_type = class_map[-1]
         return [
-            self._build_input(models_type, class_map, input_path, output_path)
-            for input_path, output_path in input_outputs
+            self._build_input(models_type, class_map, input_path, output_path, debug_name)
+            for input_path, output_path, debug_name in input_outputs
         ]
 
-    def _iter_input_outputs(self) -> list[tuple[str | None, Path]]:
-        """展开单次输入或批处理输入。"""
+    def _iter_input_outputs(self) -> list[tuple[str | None, Path, str | None]]:
+        """展开单次输入或目录输入。"""
         output_root = Path(self.output)
-        if not self.batch:
-            return [(self.input, output_root)]
+        if not self.input:
+            return [(None, output_root, None)]
 
-        return [(input_path, output_root / Path(input_path).stem) for input_path in self.batch]
+        input_path = Path(self.input)
+        if not input_path.exists():
+            raise FileNotFoundError(input_path)
+        if input_path.is_file():
+            return [(self.input, output_root, None)]
+        if not input_path.is_dir():
+            raise ValueError(f"Input path must be a file or directory: {input_path}")
 
-    def _check_batch_names(self, inputs: list[str]) -> None:
-        """检查批处理输出目录名是否重复。"""
+        inputs = sorted(path for path in input_path.iterdir() if path.is_file())
+        self._check_input_names(inputs)
+        return [(str(path), output_root / path.stem, path.stem) for path in inputs]
+
+    def _check_input_names(self, inputs: list[Path]) -> None:
+        """检查目录输入展开后的输出目录名是否重复。"""
         seen = set()
         duplicates = set()
         for input_path in inputs:
-            name = Path(input_path).stem
+            name = input_path.stem
             if name in seen:
                 duplicates.add(name)
             seen.add(name)
         if duplicates:
-            raise ValueError(f"Duplicate batch output name: {', '.join(sorted(duplicates))}")
+            raise ValueError(f"Duplicate input output name: {', '.join(sorted(duplicates))}")
 
     def _build_input(
         self,
@@ -125,6 +132,7 @@ class Core(BaseModel):
         class_map: list[type],
         input_path: str | None,
         output_path: Path,
+        debug_name: str | None,
     ) -> tuple[object, dict[str, object], dict[str, object], Path]:
         """把一个配置文件转换成一次渲染需要的数据。"""
         if self.models_path is None:
@@ -144,7 +152,7 @@ class Core(BaseModel):
             raise_after_report(exc)
         if self.debug_input:
             self._write_debug_json(
-                self._resolve_debug_path(self.debug_input),
+                self._resolve_debug_path(self.debug_input, debug_name),
                 input_data,
             )
         try:
@@ -160,7 +168,7 @@ class Core(BaseModel):
             raise_after_report(exc)
         if self.debug_models:
             self._write_debug_json(
-                self._resolve_debug_path(self.debug_models),
+                self._resolve_debug_path(self.debug_models, debug_name),
                 jinja.to_dict(input_model),
             )
         globals_data, filters_data = self._build_template_extras(class_map, input_model)
@@ -281,12 +289,14 @@ class Core(BaseModel):
             f.write(data)
             print(f"output: {dst}")
 
-    def _resolve_debug_path(self, debug_path: str) -> Path:
-        """绝对路径原样使用；相对路径相对进程当前工作目录解析。"""
+    def _resolve_debug_path(self, debug_path: str, debug_name: str | None) -> Path:
+        """绝对路径原样使用；目录输入时把调试路径当作输出目录。"""
         path = Path(debug_path)
-        if path.is_absolute():
-            return path
-        return Path.cwd() / path
+        if not path.is_absolute():
+            path = Path.cwd() / path
+        if debug_name:
+            return path / f"{debug_name}.json"
+        return path
 
     def _write_debug_json(self, path: Path, data: object) -> None:
         """把调试数据写成 JSON 文件。"""

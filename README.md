@@ -76,11 +76,10 @@ gamma
 | --- | --- | --- | --- | --- | --- |
 | `--template` | `-t` | 目录 | ✓ | | 模板目录。 |
 | `--output` | `-o` | 路径 | ✓ | | 渲染结果写出路径。 |
-| `--input` | `-i` | 文件路径 | | | 单次构建的输入配置；与 `--batch` 互斥。 |
-| `--batch` | `-b` | 多个文件路径 | | | 多份输入配置共用模板；与 `--input` 互斥。 |
+| `--input` | `-i` | 文件或目录路径 | | | 输入配置；传文件时单次构建，传目录时目录内每个文件各生成一个独立输出目录。 |
 | `--models-filename` | `-mf` | 文件名 | | `models.py` | 模板目录中的数据结构文件名。 |
-| `--debug-input` | | 文件路径 | | | 调试文件，输入配置解析后。 |
-| `--debug-models` | | 文件路径 | | | 调试文件，数据结构渲染后。 |
+| `--debug-input` | | 路径 | | | 调试文件，输入配置解析后；目录输入时该路径作为目录，按输入文件名写出多个 JSON。 |
+| `--debug-models` | | 路径 | | | 调试文件，数据结构渲染后；目录输入时该路径作为目录，按输入文件名写出多个 JSON。 |
 | `--theme` | | `auto` / `light` / `dark` / `none` | | `auto` | 颜色主题。 |
 
 ## 使用
@@ -104,24 +103,23 @@ render:
 #	--debug-models $(DEBUG_MODELS) --theme $(THEME)
 ```
 
-### 批量输入
+### 目录输入
 
-多份输入配置文件共用同一套模板。
+目录内多份输入配置文件共用同一套模板，每个输入生成一个同名输出目录。
 
 ```makefile
 TOOL       := /path/to/tool                 # 可执行文件或脚本
 TEMPLATE   := /path/to/templates/chip       # 模板族目录
-OUTPUT     := /path/to/out/batch            # 批量构建的输出根目录
-BATCH     += /path/to/in/scene_a.yaml      # 批量构建的第一份配置
-BATCH     += /path/to/in/scene_b.yaml      # 批量构建的另一份配置
+OUTPUT     := /path/to/out/generated        # 目录输入的输出根目录
+INPUT      := /path/to/in/scenes            # 批量构建的配置文件目录
 # MODELS_FILENAME := custom_models.py       # 模板目录内非默认的数据结构文件名
-# DEBUG_INPUT  := /path/to/out/input.json   # 对照配置解析中间结果
-# DEBUG_MODELS := /path/to/out/models.json  # 对照 models 实例化中间结果
+# DEBUG_INPUT  := /path/to/out/input-debug  # 对照配置解析中间结果目录
+# DEBUG_MODELS := /path/to/out/models-debug # 对照 models 实例化中间结果目录
 # THEME := dark                             # 终端错误提示配色
 
 .PHONY: render
 render:
-	$(TOOL) -t $(TEMPLATE) -o $(OUTPUT) -b $(BATCH)
+	$(TOOL) -t $(TEMPLATE) -o $(OUTPUT) -i $(INPUT)
 #	-mf $(MODELS_FILENAME) --debug-input $(DEBUG_INPUT) \
 #	--debug-models $(DEBUG_MODELS) --theme $(THEME)
 ```

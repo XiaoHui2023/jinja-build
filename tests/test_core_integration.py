@@ -16,15 +16,14 @@ from _case import TemplateProject  # noqa: E402
 
 
 class CoreValidationTests(unittest.TestCase):
-    def test_input_and_batch_are_mutually_exclusive(self) -> None:
+    def test_batch_argument_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             p = TemplateProject(Path(tmp))
-            p.write_models("class Data:\n    def __init__(self, name=''):\n        self.name = name\n")
+            p.write_models("class Data:\n    pass\n")
             with self.assertRaises(ValidationError):
                 Core(
                     template=str(p.template),
-                    input=str(p.write_json("a.json", {"name": "a"})),
-                    batch=[str(p.write_json("b.json", {"name": "b"}))],
+                    batch=[str(p.write_json("a.json", {"name": "a"}))],
                     output=str(p.output),
                 )
 
@@ -245,8 +244,8 @@ class TemplateFeatureCombinationTests(unittest.TestCase):
             self.assertEqual(p.read_output_text("sum.txt"), "a:2;b:3;|5")
 
 
-class BatchParallelCombinationTests(unittest.TestCase):
-    def test_batch_times_nested_templates_with_isolated_outputs(self) -> None:
+class DirectoryInputParallelCombinationTests(unittest.TestCase):
+    def test_directory_input_times_nested_templates_with_isolated_outputs(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             p = TemplateProject(Path(tmp))
             p.write_models(
@@ -256,19 +255,21 @@ class BatchParallelCombinationTests(unittest.TestCase):
                 "    def mark(self):\n"
                 "        return self.name.upper()\n"
             )
-            a = p.write_json("alpha.json", {"name": "alpha"})
-            b = p.write_json("beta.json", {"name": "beta"})
+            inputs = p.root / "inputs"
+            inputs.mkdir()
+            (inputs / "alpha.json").write_text('{"name": "alpha"}', encoding="utf-8")
+            (inputs / "beta.json").write_text('{"name": "beta"}', encoding="utf-8")
             p.write_template("flat.txt.j2", "{{ mark() }}\n")
             p.write_template("deep/nested.txt.j2", "{{ name | upper }}\n")
             p.write_template("optional/empty.txt.j2", "   \n")
-            p.run(batch=[str(a), str(b)])
+            p.run(input_path=str(inputs))
             self.assertEqual(p.read_output_text("alpha/flat.txt"), "ALPHA")
             self.assertEqual(p.read_output_text("alpha/deep/nested.txt"), "ALPHA")
             self.assertEqual(p.read_output_text("beta/flat.txt"), "BETA")
             self.assertFalse(p.output_exists("alpha/optional/empty.txt"))
             self.assertFalse(p.output_exists("beta/optional"))
 
-    def test_batch_three_configs_with_filter_heavy_template(self) -> None:
+    def test_directory_input_three_configs_with_filter_heavy_template(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             p = TemplateProject(Path(tmp))
             p.write_models(
@@ -288,16 +289,16 @@ class BatchParallelCombinationTests(unittest.TestCase):
                     """
                 )
             )
-            paths = [
-                p.write_json("one.json", {"raw": "ab", "tags": ["x"]}),
-                p.write_json("two.json", {"raw": "cd", "tags": ["y", "z"]}),
-                p.write_json("three.json", {"raw": "ef", "tags": []}),
-            ]
+            inputs = p.root / "inputs"
+            inputs.mkdir()
+            (inputs / "one.json").write_text('{"raw": "ab", "tags": ["x"]}', encoding="utf-8")
+            (inputs / "two.json").write_text('{"raw": "cd", "tags": ["y", "z"]}', encoding="utf-8")
+            (inputs / "three.json").write_text('{"raw": "ef", "tags": []}', encoding="utf-8")
             p.write_template(
                 "out.txt.j2",
                 "{{ head }}|{{ raw | replace('a','@') }}|{{ '' | pack(',') }}|{{ tags | len }}\n",
             )
-            p.run(batch=[str(x) for x in paths])
+            p.run(input_path=str(inputs))
             self.assertEqual(p.read_output_text("one/out.txt"), "ab|@b|x|1")
             self.assertEqual(p.read_output_text("two/out.txt"), "cd|cd|y,z|2")
             self.assertEqual(p.read_output_text("three/out.txt"), "ef|ef||0")

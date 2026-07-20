@@ -5,8 +5,6 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from pydantic import ValidationError
-
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
 if str(SRC) not in sys.path:
@@ -18,7 +16,7 @@ from _utils._dynamic_loading import load_module  # noqa: E402
 
 
 class CoreRenderTests(unittest.TestCase):
-    """覆盖模板渲染、批处理和动态加载的关键行为。"""
+    """覆盖模板渲染、目录输入和动态加载的关键行为。"""
 
     def test_template_directory_input_config_and_models_render_together(self) -> None:
         """模板目录、输入配置和数据结构文件会一起完成真实渲染。"""
@@ -119,49 +117,49 @@ class CoreRenderTests(unittest.TestCase):
             self.assertFalse((output / "nested").exists())
             self.assertFalse((output / "nested" / "empty.txt").exists())
 
-    def test_batch_outputs_use_input_stems(self) -> None:
-        """批处理会把每个输入输出到同名子目录。"""
+    def test_directory_input_outputs_use_input_stems(self) -> None:
+        """目录输入会把每个输入输出到同名子目录。"""
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             template = root / "template"
             output = root / "output"
+            inputs = root / "inputs"
             template.mkdir()
+            inputs.mkdir()
             self._write_model(template)
-            self._write_json(root / "dev.json", {"name": "dev"})
-            self._write_json(root / "prod.json", {"name": "prod"})
+            self._write_json(inputs / "dev.json", {"name": "dev"})
+            self._write_json(inputs / "prod.json", {"name": "prod"})
             (template / "name.txt.j2").write_text("{{ title() }}", encoding="utf-8")
 
             Core(
                 template=str(template),
-                batch=[str(root / "dev.json"), str(root / "prod.json")],
+                input=str(inputs),
                 output=str(output),
             ).run()
 
             self.assertEqual((output / "dev" / "name.txt").read_text(encoding="utf-8"), "DEV")
             self.assertEqual((output / "prod" / "name.txt").read_text(encoding="utf-8"), "PROD")
 
-    def test_batch_rejects_duplicate_output_names(self) -> None:
-        """批处理输入文件名重复时会提前失败。"""
+    def test_directory_input_rejects_duplicate_output_names(self) -> None:
+        """目录输入展开后的输出目录名重复时会提前失败。"""
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             template = root / "template"
-            left = root / "left"
-            right = root / "right"
+            inputs = root / "inputs"
             template.mkdir()
-            left.mkdir()
-            right.mkdir()
+            inputs.mkdir()
             self._write_model(template)
-            self._write_json(left / "same.json", {"name": "left"})
-            self._write_json(right / "same.json", {"name": "right"})
+            self._write_json(inputs / "same.json", {"name": "left"})
+            (inputs / "same.yaml").write_text("name: right\n", encoding="utf-8")
 
-            with self.assertRaises(ValidationError) as error:
+            with self.assertRaises(ValueError) as error:
                 Core(
                     template=str(template),
-                    batch=[str(left / "same.json"), str(right / "same.json")],
+                    input=str(inputs),
                     output=str(root / "output"),
-                )
+                ).run()
 
-            self.assertIn("Duplicate batch output name: same", str(error.exception))
+            self.assertIn("Duplicate input output name: same", str(error.exception))
 
     def test_property_eval_error_aborts_with_report(self) -> None:
         """property 求值失败应报错中止，而不是变成未定义变量。"""
@@ -425,38 +423,44 @@ class CoreRenderTests(unittest.TestCase):
             model_data = json.loads((debug_dir / "model.json").read_text(encoding="utf-8"))
             self.assertEqual(model_data["name"], "abs")
 
-    def test_debug_json_relative_to_cwd_in_batch(self) -> None:
-        """批处理时相对调试路径仍相对当前工作目录，同名文件以后一次输入为准。"""
+    def test_debug_json_relative_to_cwd_in_directory_input(self) -> None:
+        """目录输入时相对调试路径仍相对当前工作目录，并按输入文件分别写出。"""
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             template = root / "template"
             output = root / "output"
+            inputs = root / "inputs"
             template.mkdir()
+            inputs.mkdir()
             self._write_model(template)
             (template / "name.txt.j2").write_text("{{ name }}\n", encoding="utf-8")
-            self._write_json(root / "a.json", {"name": "alpha"})
-            self._write_json(root / "b.json", {"name": "beta"})
+            self._write_json(inputs / "a.json", {"name": "alpha"})
+            self._write_json(inputs / "b.json", {"name": "beta"})
 
             prev_cwd = os.getcwd()
             try:
                 os.chdir(root)
                 Core(
                     template=str(template),
-                    batch=[str(root / "a.json"), str(root / "b.json")],
+                    input=str(inputs),
                     output=str(output),
-                    debug_input="debug-input.json",
-                    debug_models="debug-models.json",
+                    debug_input="debug-input",
+                    debug_models="debug-models",
                 ).run()
             finally:
                 os.chdir(prev_cwd)
 
             self.assertEqual(
-                json.loads((root / "debug-input.json").read_text(encoding="utf-8")),
+                json.loads((root / "debug-input" / "a.json").read_text(encoding="utf-8")),
+                {"name": "alpha"},
+            )
+            self.assertEqual(
+                json.loads((root / "debug-input" / "b.json").read_text(encoding="utf-8")),
                 {"name": "beta"},
             )
             self.assertEqual(
-                json.loads((root / "debug-models.json").read_text(encoding="utf-8")),
-                {"name": "beta"},
+                json.loads((root / "debug-models" / "a.json").read_text(encoding="utf-8")),
+                {"name": "alpha"},
             )
 
     def test_dynamic_loading_restores_sys_path(self) -> None:

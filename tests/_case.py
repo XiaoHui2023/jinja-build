@@ -47,7 +47,6 @@ class TemplateProject:
         self,
         *,
         input_path: str | None = None,
-        batch: list[str] | None = None,
         output: str | None = None,
         models_filename: str = "models.py",
         template: str | None = None,
@@ -56,7 +55,6 @@ class TemplateProject:
         Core(
             template=template or str(self.template),
             input=input_path,
-            batch=batch,
             output=output or str(self.output),
             models_filename=models_filename,
             **kwargs,
