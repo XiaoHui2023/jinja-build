@@ -170,6 +170,20 @@ class TemplateViewTests(unittest.TestCase):
         items = view.get_attribute("items")
         self.assertEqual(items[0].get_attribute("n"), 1)
 
+    def test_dict_methods_when_no_same_name_key(self) -> None:
+        view = wrap_for_template({"a": {"n": 1}, "b": {"n": 2}})
+
+        items = view.get_attribute("items")()
+        self.assertEqual([key for key, _value in items], ["a", "b"])
+        self.assertEqual(items[0][1].get_attribute("n"), 1)
+        self.assertEqual(items[1][1].get_attribute("n"), 2)
+
+        self.assertEqual(view.get_attribute("keys")(), ["a", "b"])
+        values = view.get_attribute("values")()
+        self.assertEqual([value.get_attribute("n") for value in values], [1, 2])
+        self.assertEqual(view.get_attribute("get")("a").get_attribute("n"), 1)
+        self.assertEqual(view.get_attribute("get")("missing", "fallback"), "fallback")
+
 
 class RenderWithTemplateViewTests(unittest.TestCase):
     def test_render_pydantic_alias_and_property(self) -> None:
@@ -326,6 +340,26 @@ class RenderEnvironmentTests(unittest.TestCase):
         env = _jinja.SafeDictEnvironment(loader=FileSystemLoader([Path(__file__).parent]))
         tpl = env.from_string("{{ data.items }}")
         self.assertEqual(tpl.render({"data": {"items": [1]}}), "[1]")
+
+    def test_template_view_supports_dict_methods(self) -> None:
+        class Root(BaseModel):
+            data: dict
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tpl = Path(tmp) / "t.j2"
+            tpl.write_text(
+                "{% for key, value in data.items() %}"
+                "{{ key }}={{ value.n }};"
+                "{% endfor %}"
+                "|{% for key in data.keys() %}{{ key }}{% endfor %}"
+                "|{{ data.values() | map(attribute='n') | sum }}"
+                "|{{ data.get('b').n }}"
+                "|{{ data.get('missing', 'fallback') }}",
+                encoding="utf-8",
+            )
+
+            out = _jinja.render(tpl, Root(data={"a": {"n": 1}, "b": {"n": 2}}))
+            self.assertEqual(out, "a=1;b=2;|ab|3|2|fallback")
 
 
 if __name__ == "__main__":

@@ -208,10 +208,55 @@ class TemplateView:
         return self._path
 
     def get_attribute(self, name: str) -> Any:
+        if isinstance(self._obj, dict) and name not in self._obj:
+            method = self._dict_method(name)
+            if method is not None:
+                return method
+
         value, found = resolve_attribute(self._obj, name)
         if not found:
             raise AttributeError(name)
         return wrap_value(value, path=f"{self._path}.{name}", source_type=_source_label(value))
+
+    def _dict_method(self, name: str) -> Any:
+        obj = self._obj
+        if not isinstance(obj, dict):
+            return None
+
+        if name == "items":
+            return lambda: [
+                (
+                    key,
+                    wrap_value(
+                        value,
+                        path=f"{self._path}[{key!r}]",
+                        source_type=_source_label(value),
+                    ),
+                )
+                for key, value in obj.items()
+            ]
+        if name == "keys":
+            return lambda: list(obj.keys())
+        if name == "values":
+            return lambda: [
+                wrap_value(
+                    value,
+                    path=f"{self._path}[{key!r}]",
+                    source_type=_source_label(value),
+                )
+                for key, value in obj.items()
+            ]
+        if name == "get":
+            return lambda key, default=None: (
+                wrap_value(
+                    obj[key],
+                    path=f"{self._path}[{key!r}]",
+                    source_type=_source_label(obj[key]),
+                )
+                if key in obj
+                else default
+            )
+        return None
 
     def get_item(self, key: Any) -> Any:
         try:

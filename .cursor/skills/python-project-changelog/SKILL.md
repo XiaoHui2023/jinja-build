@@ -9,6 +9,10 @@ description: >-
 
 （最新在上。规则见 `~/.cursor/skills/agent-project-changelog/SKILL.md`。）
 
+## 2026-07-22
+
+- **决议**：`TemplateView` 对 dict 继续保持 key 优先，同时在无同名 key 时支持模板显式调用 `items()`、`keys()`、`values()`、`get()`；`data.items` 仍读配置字段，`data.items()` 才进入方法兼容层。单测覆盖 key 优先与新增方法。
+
 ## 2026-06-26
 
 - **决议**：发行压缩包纳入 `examples/`（排除 `generated/`）；示范目录去掉序号前缀并重写各 README。

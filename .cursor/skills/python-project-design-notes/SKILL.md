@@ -28,6 +28,7 @@ description: >-
 
 - **主数据类**：`models.py` 中**最后一个** `class` 为输入配置实例化的类型；其前的类注册为模板**全局**（类型名 -> 类对象），供模板引用类型本身。
 - **渲染环境**：`StrictUndefined`；`jinja2.ext.do`、`loopcontrols`；`SafeDictEnvironment` 对 dict 优先按键访问。
+- **dict 方法兼容**：`TemplateView` 保持 key 优先；只有 dict 不含同名 key 时才额外支持模板显式调用 `items()`、`keys()`、`values()`、`get()`。例如 `data.items` 仍读 key，`data.items()` 才是方法调用。
 - **搜索路径**：模板所在目录 + 模板根（目录模式为 `-t` 指向的目录）。
 
 ## 主入口 · 过滤器（硬性）
