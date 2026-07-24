@@ -54,6 +54,42 @@ def render(
     if search_paths is None:
         search_paths = []
 
+    try:
+        context = build_render_context(data)
+    except Exception as exc:
+        _handle_render_error(
+            exc,
+            entry_path=Path(src).resolve(),
+            defer_error_report=defer_error_report,
+        )
+
+    return render_context(
+        src,
+        context,
+        globals_var,
+        filters_var=filters_var,
+        search_paths=search_paths,
+        defer_error_report=defer_error_report,
+    )
+
+
+def render_context(
+    src: str | Path,
+    context: dict[str, Any],
+    globals_var: dict[str, object] | None = None,
+    filters_var: dict[str, Callable[..., object]] | None = None,
+    search_paths: list[str | Path] | None = None,
+    *,
+    defer_error_report: bool = False,
+) -> str:
+    """用已构造的模板上下文渲染模板文件。"""
+    if globals_var is None:
+        globals_var = {}
+    if filters_var is None:
+        filters_var = {}
+    if search_paths is None:
+        search_paths = []
+
     src_path = Path(src).resolve()
     env = get_env(src_path, search_paths, globals_var, filters_var)
     template_name = resolve_template_name(src_path, search_paths)
@@ -61,11 +97,6 @@ def render(
     try:
         template = env.get_template(template_name)
     except TemplateError as exc:
-        _handle_render_error(exc, entry_path=src_path, defer_error_report=defer_error_report)
-
-    try:
-        context = build_render_context(data)
-    except Exception as exc:
         _handle_render_error(exc, entry_path=src_path, defer_error_report=defer_error_report)
 
     try:
@@ -93,9 +124,11 @@ def load_models(file_path: str | Path) -> list[type]:
 
 __all__ = [
     "SafeDictEnvironment",
+    "build_render_context",
     "get_env",
     "load_models",
     "render",
+    "render_context",
     "resolve_template_name",
     "to_dict",
 ]

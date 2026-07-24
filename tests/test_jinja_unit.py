@@ -361,6 +361,21 @@ class RenderEnvironmentTests(unittest.TestCase):
             out = _jinja.render(tpl, Root(data={"a": {"n": 1}, "b": {"n": 2}}))
             self.assertEqual(out, "a=1;b=2;|ab|3|2|fallback")
 
+    def test_template_view_supports_jinja_map_attribute(self) -> None:
+        class Item(BaseModel):
+            name: str
+            qty: int
+
+        class Root(BaseModel):
+            items: list[Item]
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tpl = Path(tmp) / "t.j2"
+            tpl.write_text("{{ items | map(attribute='qty') | sum }}", encoding="utf-8")
+
+            out = _jinja.render(tpl, Root(items=[Item(name="a", qty=2), Item(name="b", qty=3)]))
+            self.assertEqual(out, "5")
+
 
 if __name__ == "__main__":
     unittest.main()

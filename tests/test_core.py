@@ -349,6 +349,44 @@ class CoreRenderTests(unittest.TestCase):
                 "ADA|odo|title:ada\n3|6",
             )
 
+    def test_render_context_is_built_once_per_input(self) -> None:
+        """同一输入渲染多个模板时，顶层 property 只在构造 context 时访问一次。"""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            template = root / "template"
+            output = root / "output"
+            counter = root / "counter.txt"
+            template.mkdir()
+            (template / "models.py").write_text(
+                "from pathlib import Path\n"
+                "\n"
+                "class Data:\n"
+                "    def __init__(self, name=''):\n"
+                "        self.name = name\n"
+                "\n"
+                "    @property\n"
+                "    def label(self):\n"
+                f"        path = Path({str(counter)!r})\n"
+                "        count = int(path.read_text(encoding='utf-8')) if path.exists() else 0\n"
+                "        path.write_text(str(count + 1), encoding='utf-8')\n"
+                "        return self.name.upper()\n",
+                encoding="utf-8",
+            )
+            self._write_json(root / "in.json", {"name": "ada"})
+            for name in ["a.txt.j2", "b.txt.j2", "c.txt.j2"]:
+                (template / name).write_text("{{ label }}\n", encoding="utf-8")
+
+            Core(
+                template=str(template),
+                input=str(root / "in.json"),
+                output=str(output),
+            ).run()
+
+            self.assertEqual(counter.read_text(encoding="utf-8"), "1")
+            self.assertEqual((output / "a.txt").read_text(encoding="utf-8"), "ADA")
+            self.assertEqual((output / "b.txt").read_text(encoding="utf-8"), "ADA")
+            self.assertEqual((output / "c.txt").read_text(encoding="utf-8"), "ADA")
+
     def test_debug_input_and_debug_models_write_json(self) -> None:
         """调试路径在渲染前写出解析配置与 models 数据。"""
         with tempfile.TemporaryDirectory() as tmp:

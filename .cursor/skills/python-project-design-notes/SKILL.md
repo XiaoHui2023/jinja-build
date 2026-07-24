@@ -28,7 +28,9 @@ description: >-
 
 - **主数据类**：`models.py` 中**最后一个** `class` 为输入配置实例化的类型；其前的类注册为模板**全局**（类型名 -> 类对象），供模板引用类型本身。
 - **渲染环境**：`StrictUndefined`；`jinja2.ext.do`、`loopcontrols`；`SafeDictEnvironment` 对 dict 优先按键访问。
+- **渲染上下文**：同一输入模型只在输入构建阶段执行一次 `build_render_context`；并行模板任务共享该 context，不缓存模板输出。模板渲染阶段应视为只读，不在模板或过滤器中修改 context 内对象。
 - **dict 方法兼容**：`TemplateView` 保持 key 优先；只有 dict 不含同名 key 时才额外支持模板显式调用 `items()`、`keys()`、`values()`、`get()`。例如 `data.items` 仍读 key，`data.items()` 才是方法调用。
+- **Jinja attribute 兼容**：`TemplateView.get_item` 在真实下标/键访问失败后，对字符串 key 回退到属性解析，使 `map(attribute='qty')` 与 `item.qty` 对 Pydantic/dataclass/普通对象保持一致。
 - **搜索路径**：模板所在目录 + 模板根（目录模式为 `-t` 指向的目录）。
 
 ## 主入口 · 过滤器（硬性）

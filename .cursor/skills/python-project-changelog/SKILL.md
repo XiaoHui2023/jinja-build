@@ -9,6 +9,11 @@ description: >-
 
 （最新在上。规则见 `~/.cursor/skills/agent-project-changelog/SKILL.md`。）
 
+## 2026-07-24
+
+- **决议**：渲染流程改为每个输入模型只构造一次 `build_render_context`，`Core` 以 `RenderInput` 携带 context/globals/filters/output，模板任务调用 `jinja.render_context` 共享输入级 context，不缓存模板输出。
+- **修复**：`TemplateView.get_item` 对字符串 key 在真实下标/键访问失败后回退到属性解析，使 Jinja `map(attribute='qty')` 与 `item.qty` 一致；真实 examples 回归覆盖 `jinja-basics` 的 set/filter 场景。
+
 ## 2026-07-22
 
 - **决议**：`TemplateView` 对 dict 继续保持 key 优先，同时在无同名 key 时支持模板显式调用 `items()`、`keys()`、`values()`、`get()`；`data.items` 仍读配置字段，`data.items()` 才进入方法兼容层。单测覆盖 key 优先与新增方法。

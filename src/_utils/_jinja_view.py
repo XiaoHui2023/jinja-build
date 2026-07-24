@@ -262,6 +262,11 @@ class TemplateView:
         try:
             value = self._obj[key]
         except (KeyError, IndexError, TypeError) as exc:
+            if isinstance(key, str):
+                try:
+                    return self.get_attribute(key)
+                except AttributeError:
+                    pass
             raise KeyError(key) from exc
         key_label = repr(key)
         return wrap_value(

@@ -3,6 +3,7 @@ import json
 import os
 from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import dataclass
 from pathlib import Path
 
 from configlib import load_config
@@ -17,6 +18,14 @@ from _utils._dynamic_loading import models_import_path
 from _utils._filters import build_model_method_filters
 from _utils._input_errors import print_input_model_error
 from _utils._jinja_errors import print_render_user_error, print_template_error
+
+
+@dataclass(frozen=True)
+class RenderInput:
+    render_context: dict[str, object]
+    globals_data: dict[str, object]
+    filters_data: dict[str, object]
+    output_path: Path
 
 
 class Core(BaseModel):
@@ -88,7 +97,7 @@ class Core(BaseModel):
         self,
         class_map: list[type],
         input_outputs: list[tuple[str | None, Path, str | None]],
-    ) -> list[tuple[object, dict[str, object], dict[str, object], Path]]:
+    ) -> list[RenderInput]:
         """读取全部输入配置并创建模板可用的数据对象。"""
         models_type = class_map[-1]
         return [
@@ -133,7 +142,7 @@ class Core(BaseModel):
         input_path: str | None,
         output_path: Path,
         debug_name: str | None,
-    ) -> tuple[object, dict[str, object], dict[str, object], Path]:
+    ) -> RenderInput:
         """把一个配置文件转换成一次渲染需要的数据。"""
         if self.models_path is None:
             raise RuntimeError("models path is not ready")
@@ -171,8 +180,18 @@ class Core(BaseModel):
                 self._resolve_debug_path(self.debug_models, debug_name),
                 jinja.to_dict(input_model),
             )
+        try:
+            render_context = jinja.build_render_context(input_model)
+        except BaseException as exc:
+            print_render_user_error(exc, entry_path=models_path)
+            raise_after_report(exc)
         globals_data, filters_data = self._build_template_extras(class_map, input_model)
-        return input_model, globals_data, filters_data, output_path
+        return RenderInput(
+            render_context=render_context,
+            globals_data=globals_data,
+            filters_data=filters_data,
+            output_path=output_path,
+        )
 
     def _load_input_data(self, input_path: str | None) -> dict[str, object]:
         """读取一个输入配置文件。"""
@@ -207,7 +226,7 @@ class Core(BaseModel):
 
     def _render_all(
         self,
-        inputs: list[tuple[object, dict[str, object], dict[str, object], Path]],
+        inputs: list[RenderInput],
         templates: tuple[list[Path], list[Path]],
     ) -> None:
         """并行渲染全部输入和模板组合。"""
@@ -215,13 +234,13 @@ class Core(BaseModel):
         jobs = [
             (
                 path_j2,
-                self._output_path(output_path, path_j2),
-                input_model,
-                global_data,
-                filter_data,
+                self._output_path(input_data.output_path, path_j2),
+                input_data.render_context,
+                input_data.globals_data,
+                input_data.filters_data,
                 search_paths,
             )
-            for input_model, global_data, filter_data, output_path in inputs
+            for input_data in inputs
             for path_j2 in template_paths
         ]
         if not jobs:
@@ -260,16 +279,16 @@ class Core(BaseModel):
         self,
         path_j2: Path,
         dst: str,
-        input_model: object,
+        render_context: dict[str, object],
         global_data: dict[str, object],
         filter_data: dict[str, object],
         search_paths: list[Path],
     ) -> None:
         """渲染并写出一个模板结果。"""
         try:
-            content = jinja.render(
+            content = jinja.render_context(
                 path_j2,
-                input_model,
+                render_context,
                 global_data,
                 filters_var=filter_data,
                 search_paths=search_paths,
