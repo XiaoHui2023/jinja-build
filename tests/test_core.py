@@ -428,6 +428,44 @@ class CoreRenderTests(unittest.TestCase):
             self.assertEqual(debug_models["label"], "HI")
             self.assertEqual((output / "out").read_text(encoding="utf-8").rstrip("\n"), "hi HI")
 
+    def test_yaml_include_blank_line_writes_debug_input_and_renders(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            template = root / "template"
+            output = root / "output"
+            template.mkdir()
+            (template / "models.py").write_text(
+                "from pydantic import BaseModel\n"
+                "\n"
+                "class Data(BaseModel):\n"
+                "    vars: dict[str, dict[str, int]]\n"
+                "    use: int\n",
+                encoding="utf-8",
+            )
+            (template / "out.j2").write_text("{{ vars.a.value }} {{ vars.b.value }} {{ use }}\n", encoding="utf-8")
+            (root / "a.yaml").write_text("a:\n  value: 1\n", encoding="utf-8")
+            (root / "b.yaml").write_text("b:\n  value: 2\n", encoding="utf-8")
+            (root / "in.yaml").write_text(
+                "vars:\n"
+                "  !include a.yaml\n"
+                "\n"
+                "  !include b.yaml\n"
+                "use: ${vars.a.value}\n",
+                encoding="utf-8",
+            )
+
+            Core(
+                template=str(template),
+                input=str(root / "in.yaml"),
+                output=str(output),
+                debug_input=str(root / "debug-input.json"),
+            ).run()
+
+            debug_in = json.loads((root / "debug-input.json").read_text(encoding="utf-8"))
+            self.assertEqual(debug_in["vars"], {"a": {"value": 1}, "b": {"value": 2}})
+            self.assertEqual(debug_in["use"], 1)
+            self.assertEqual((output / "out").read_text(encoding="utf-8"), "1 2 1")
+
     def test_debug_paths_absolute(self) -> None:
         """绝对调试路径按用户指定位置写出。"""
         with tempfile.TemporaryDirectory() as tmp:

@@ -9,7 +9,7 @@ requires-python = ">=3.10"
 dependencies = [
     "Jinja2",
     "pydantic",
-    "python-library-configlib==0.1.9",
+    "python-library-configlib==0.1.10",
     "rich",
 ]
 
